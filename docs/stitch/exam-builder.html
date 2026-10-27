@@ -1,0 +1,726 @@
+<!doctype html>
+
+<html class="light" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Exam Builder - Ezio Nigeria</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "tertiary-fixed": "#fdd6ff",
+              "primary-container": "#a8d93e",
+              "error-container": "#ffdad6",
+              "primary-fixed": "#c1f356",
+              "inverse-surface": "#2f3133",
+              "status-synced": "#2563EB",
+              "primary-fixed-dim": "#a6d63c",
+              "on-error-container": "#93000a",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-fixed": "#141f00",
+              "on-tertiary-fixed-variant": "#673073",
+              secondary: "#0051d5",
+              "outline-variant": "#c4c9b1",
+              error: "#ba1a1a",
+              "on-error": "#ffffff",
+              "secondary-fixed": "#dbe1ff",
+              "surface-container-low": "#f3f3f6",
+              "on-surface": "#1a1c1e",
+              "on-primary": "#ffffff",
+              "status-error": "#EF4444",
+              "surface-bright": "#f9f9fc",
+              "on-primary-container": "#425c00",
+              "secondary-container": "#316bf3",
+              "inverse-on-surface": "#f0f0f3",
+              primary: "#4a6700",
+              "on-surface-variant": "#434936",
+              "on-secondary-container": "#fefcff",
+              "status-pending": "#F59E0B",
+              "on-tertiary-container": "#763e82",
+              background: "#f9f9fc",
+              "surface-container": "#eeeef0",
+              tertiary: "#81488d",
+              "surface-container-highest": "#e2e2e5",
+              outline: "#747964",
+              "surface-dim": "#dadadc",
+              "on-secondary-fixed-variant": "#003ea8",
+              surface: "#FFFFFF",
+              "secondary-fixed-dim": "#b4c5ff",
+              "surface-tint": "#4a6700",
+              "on-secondary-fixed": "#00174b",
+              "inverse-primary": "#a6d63c",
+              "border-subtle": "#E5E7EB",
+              "on-primary-fixed-variant": "#374e00",
+              "tertiary-container": "#f5b2ff",
+              "tertiary-fixed-dim": "#f2affc",
+              "on-tertiary-fixed": "#340042",
+              "on-secondary": "#ffffff",
+              "on-background": "#1a1c1e",
+              "surface-variant": "#e2e2e5",
+              "surface-container-high": "#e8e8ea",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              "sidebar-width": "260px",
+              gutter: "24px",
+              "margin-mobile": "16px",
+              "margin-desktop": "32px",
+              base: "8px",
+            },
+            fontFamily: {
+              "headline-lg": ["Hanken Grotesk"],
+              "headline-md": ["Hanken Grotesk"],
+              "label-sm": ["Hanken Grotesk"],
+              "body-md": ["Hanken Grotesk"],
+              "body-lg": ["Hanken Grotesk"],
+              "headline-lg-mobile": ["Hanken Grotesk"],
+              "display-lg": ["Hanken Grotesk"],
+              "label-md": ["Hanken Grotesk"],
+            },
+            fontSize: {
+              "headline-lg": [
+                "32px",
+                {
+                  lineHeight: "40px",
+                  letterSpacing: "-0.01em",
+                  fontWeight: "600",
+                },
+              ],
+              "headline-md": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  fontWeight: "600",
+                },
+              ],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "16px",
+                  letterSpacing: "0.05em",
+                  fontWeight: "600",
+                },
+              ],
+              "body-md": [
+                "16px",
+                {
+                  lineHeight: "24px",
+                  fontWeight: "400",
+                },
+              ],
+              "body-lg": [
+                "18px",
+                {
+                  lineHeight: "28px",
+                  fontWeight: "400",
+                },
+              ],
+              "headline-lg-mobile": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  fontWeight: "600",
+                },
+              ],
+              "display-lg": [
+                "48px",
+                {
+                  lineHeight: "56px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "700",
+                },
+              ],
+              "label-md": [
+                "14px",
+                {
+                  lineHeight: "20px",
+                  letterSpacing: "0.01em",
+                  fontWeight: "600",
+                },
+              ],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      .glass-card {
+        background: rgba(255, 255, 255, 1);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.05),
+          0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      }
+      .drag-active {
+        border-color: #a8d93e;
+        background-color: rgba(168, 217, 62, 0.05);
+      }
+      .gradient-glow:focus-within {
+        box-shadow:
+          0 0 0 2px #a8d93e,
+          0 4px 14px 0 rgba(168, 217, 62, 0.2);
+      }
+    </style>
+  </head>
+  <body class="bg-background text-on-surface antialiased flex">
+    <!-- SideNavBar (JSON Context) -->
+    <nav
+      class="bg-surface dark:bg-inverse-surface text-on-surface dark:text-inverse-primary fixed left-0 top-0 h-screen w-sidebar-width border-r border-outline-variant shadow-sm z-50 flex flex-col p-4 gap-2 hidden md:flex"
+    >
+      <div
+        class="flex items-center gap-3 px-2 py-4 mb-6 border-b border-outline-variant"
+      >
+        <div
+          class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center shrink-0"
+        >
+          <span class="material-symbols-outlined text-on-surface">school</span>
+        </div>
+        <div>
+          <h1
+            class="font-headline-md text-headline-md font-bold text-on-surface tracking-tight leading-tight"
+          >
+            Ezio Nigeria
+          </h1>
+          <p class="font-label-sm text-label-sm text-on-surface-variant">
+            Admin Portal
+          </p>
+        </div>
+      </div>
+      <button
+        class="bg-primary-container text-on-surface font-label-md text-label-md font-bold rounded-lg py-3 px-4 mb-6 shadow-sm hover:shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+      >
+        <span class="material-symbols-outlined text-on-surface">add</span>
+        Take New Exam
+      </button>
+      <div class="flex-1 overflow-y-auto space-y-1">
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >dashboard</span
+          >
+          Dashboard
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/20 border-l-4 border-primary-container text-on-surface font-bold font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-primary">quiz</span>
+          My Exams
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >assessment</span
+          >
+          Results
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >group</span
+          >
+          Students
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >school</span
+          >
+          Teachers
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >database</span
+          >
+          Question Bank
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >dns</span
+          >
+          Local Servers
+        </a>
+      </div>
+      <div class="mt-auto pt-4 border-t border-outline-variant space-y-1">
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >settings</span
+          >
+          Settings
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-all duration-200 font-label-md text-label-md"
+          href="#"
+        >
+          <span class="material-symbols-outlined text-on-surface-variant"
+            >logout</span
+          >
+          Logout
+        </a>
+      </div>
+    </nav>
+    <!-- Main Content Wrapper -->
+    <div class="flex-1 flex flex-col md:ml-[260px] min-h-screen">
+      <!-- TopNavBar (JSON Context) -->
+      <header
+        class="bg-surface dark:bg-surface-container-highest docked full-width top-0 border-b border-outline-variant dark:border-outline shadow-sm flex justify-between items-center h-16 px-margin-desktop sticky z-40 w-full"
+      >
+        <div class="flex items-center gap-4">
+          <h2
+            class="font-headline-md text-headline-md font-extrabold text-on-surface"
+          >
+            Ezio
+          </h2>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="relative hidden sm:block">
+            <span
+              class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+              >search</span
+            >
+            <input
+              class="pl-10 pr-4 py-2 rounded-full bg-surface-container-high border-none focus:ring-2 focus:ring-primary-container font-body-md text-body-md text-on-surface w-64"
+              placeholder="Search..."
+              type="text"
+            />
+          </div>
+          <button
+            class="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed cursor-pointer transition-colors duration-200 rounded-full hover:bg-surface-variant"
+          >
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+          <button
+            class="p-2 text-on-surface-variant hover:text-primary dark:hover:text-primary-fixed cursor-pointer transition-colors duration-200 rounded-full hover:bg-surface-variant"
+          >
+            <span class="material-symbols-outlined">help</span>
+          </button>
+          <div
+            class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant"
+          >
+            <img
+              alt="User Profile"
+              class="w-full h-full object-cover"
+              data-alt="A professional headshot of a smiling teacher in a brightly lit modern classroom setting, wearing a smart casual outfit. The lighting is soft and flattering, creating an approachable and authoritative mood."
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoC9vxddjFSD4X-Hrml8mVcmqa22R273E7qy5I4k4_7aHkQsEYvgTXgis1Dvy_CP61D44ZCAycoQ3dTBhcOCsqB9hNiXJ8hisZLKjKXwcYg_-MQjyVHklhdxfI4dMG5Ntl4YK9arVXzY_gAYhb7-C_msy6oVXXzei5IL6-ACz5abHzRwsANogR5BqIujL3Eg2wDNM7BPDNTs2TlmLsnBE4PllUoffAddTcGj5C_Pr5N6Ga8MXgpeCqnA"
+            />
+          </div>
+        </div>
+      </header>
+      <!-- Canvas -->
+      <main
+        class="flex-1 p-margin-mobile md:p-margin-desktop max-w-[1440px] mx-auto w-full"
+      >
+        <div class="mb-8">
+          <h2
+            class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2"
+          >
+            Exam Builder
+          </h2>
+          <p class="font-body-md text-body-md text-on-surface-variant">
+            Configure metadata and upload questions to create a new assessment.
+          </p>
+        </div>
+        <form class="space-y-8">
+          <!-- Metadata Section (Bento style grid) -->
+          <section class="glass-card rounded-xl p-6 md:p-8 bg-surface">
+            <h3
+              class="font-headline-md text-headline-md text-on-surface mb-6 flex items-center gap-2"
+            >
+              <span class="material-symbols-outlined text-primary"
+                >settings_suggest</span
+              >
+              Exam Metadata
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                class="col-span-1 md:col-span-2 lg:col-span-2 rounded-lg transition-shadow"
+              >
+                <label
+                  class="block font-label-md text-label-md text-on-surface-variant mb-2"
+                  >Exam Title</label
+                >
+                <input
+                  class="w-full bg-[#F9FAFB] border-outline-variant border rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:bg-white transition-colors"
+                  placeholder="e.g. Mid-Term Mathematics JS3"
+                  type="text"
+                />
+              </div>
+              <div class="rounded-lg transition-shadow">
+                <label
+                  class="block font-label-md text-label-md text-on-surface-variant mb-2"
+                  >Subject</label
+                >
+                <select
+                  class="w-full bg-[#F9FAFB] border-outline-variant border rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:bg-white transition-colors"
+                >
+                  <option disabled="" selected="" value="">
+                    Select Subject
+                  </option>
+                  <option>Mathematics</option>
+                  <option>English Language</option>
+                  <option>Basic Science</option>
+                  <option>Civic Education</option>
+                </select>
+              </div>
+              <div class="rounded-lg transition-shadow">
+                <label
+                  class="block font-label-md text-label-md text-on-surface-variant mb-2"
+                  >Class Level</label
+                >
+                <select
+                  class="w-full bg-[#F9FAFB] border-outline-variant border rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:bg-white transition-colors"
+                >
+                  <option disabled="" selected="" value="">Select Class</option>
+                  <option>JS 1</option>
+                  <option>JS 2</option>
+                  <option>JS 3</option>
+                  <option>SS 1</option>
+                  <option>SS 2</option>
+                  <option>SS 3</option>
+                </select>
+              </div>
+              <div class="rounded-lg transition-shadow">
+                <label
+                  class="block font-label-md text-label-md text-on-surface-variant mb-2"
+                  >Duration (Minutes)</label
+                >
+                <input
+                  class="w-full bg-[#F9FAFB] border-outline-variant border rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:bg-white transition-colors"
+                  max="300"
+                  min="5"
+                  placeholder="e.g. 60"
+                  type="number"
+                />
+              </div>
+              <div class="rounded-lg transition-shadow">
+                <label
+                  class="block font-label-md text-label-md text-on-surface-variant mb-2"
+                  >Attempt Limit</label
+                >
+                <input
+                  class="w-full bg-[#F9FAFB] border-outline-variant border rounded-lg px-4 py-3 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary-container focus:bg-white transition-colors"
+                  max="10"
+                  min="1"
+                  placeholder="e.g. 1"
+                  type="number"
+                />
+              </div>
+              <!-- Mode Toggle -->
+              <div class="col-span-1 md:col-span-2 lg:col-span-3 mt-2">
+                <label
+                  class="block font-label-md text-label-md text-on-surface-variant mb-3"
+                  >Delivery Mode</label
+                >
+                <div class="flex flex-wrap gap-4">
+                  <label
+                    class="relative flex items-center cursor-pointer group"
+                  >
+                    <input
+                      checked=""
+                      class="peer sr-only"
+                      name="mode"
+                      type="radio"
+                      value="online"
+                    />
+                    <div
+                      class="px-6 py-3 rounded-full border border-outline-variant bg-surface text-on-surface-variant font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-surface peer-checked:border-primary-container transition-all shadow-sm"
+                    >
+                      Online Only
+                    </div>
+                  </label>
+                  <label
+                    class="relative flex items-center cursor-pointer group"
+                  >
+                    <input
+                      class="peer sr-only"
+                      name="mode"
+                      type="radio"
+                      value="offline"
+                    />
+                    <div
+                      class="px-6 py-3 rounded-full border border-outline-variant bg-surface text-on-surface-variant font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-surface peer-checked:border-primary-container transition-all shadow-sm"
+                    >
+                      Offline CBT
+                    </div>
+                  </label>
+                  <label
+                    class="relative flex items-center cursor-pointer group"
+                  >
+                    <input
+                      class="peer sr-only"
+                      name="mode"
+                      type="radio"
+                      value="hybrid"
+                    />
+                    <div
+                      class="px-6 py-3 rounded-full border border-outline-variant bg-surface text-on-surface-variant font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-surface peer-checked:border-primary-container transition-all shadow-sm"
+                    >
+                      Hybrid
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+          <!-- Question Upload Zone -->
+          <section class="glass-card rounded-xl p-6 md:p-8 bg-surface">
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+              <h3
+                class="font-headline-md text-headline-md text-on-surface flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-primary"
+                  >upload_file</span
+                >
+                Question Upload
+              </h3>
+              <a
+                class="text-on-surface hover:text-primary-container font-label-md text-label-md flex items-center gap-1 transition-colors underline underline-offset-2"
+                href="#"
+              >
+                <span class="material-symbols-outlined text-[18px]"
+                  >download</span
+                >
+                Download .xlsx Template
+              </a>
+            </div>
+            <div
+              class="border-2 border-dashed border-outline-variant rounded-xl bg-[#F9FAFB] p-12 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer hover:bg-surface-container hover:border-primary-container"
+              id="dropzone"
+            >
+              <div
+                class="w-16 h-16 bg-primary-container/20 rounded-full flex items-center justify-center mb-4"
+              >
+                <span class="material-symbols-outlined text-primary text-3xl"
+                  >cloud_upload</span
+                >
+              </div>
+              <h4
+                class="font-headline-md text-headline-md text-on-surface mb-2"
+              >
+                Drag and drop your spreadsheet here
+              </h4>
+              <p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                Supported formats: .xlsx, .csv (Max size 5MB)
+              </p>
+              <button
+                class="bg-white border border-outline-variant text-on-surface font-label-md text-label-md font-bold py-2 px-6 rounded-lg shadow-sm hover:bg-surface-variant transition-colors"
+                type="button"
+              >
+                Browse Files
+              </button>
+            </div>
+          </section>
+          <!-- Preview Parsed Questions -->
+          <section class="glass-card rounded-xl p-6 md:p-8 bg-surface">
+            <div class="flex justify-between items-center mb-6">
+              <h3
+                class="font-headline-md text-headline-md text-on-surface flex items-center gap-2"
+              >
+                <span class="material-symbols-outlined text-primary"
+                  >preview</span
+                >
+                Preview Parsed Questions
+              </h3>
+              <span
+                class="bg-primary-container/20 text-on-surface font-label-sm text-label-sm px-3 py-1 rounded-full border border-primary-container/50"
+                >3 Questions Parsed</span
+              >
+            </div>
+            <div
+              class="overflow-x-auto rounded-lg border border-outline-variant"
+            >
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr
+                    class="bg-surface-container-high border-b border-outline-variant"
+                  >
+                    <th
+                      class="p-4 font-label-md text-label-md text-on-surface font-bold w-12 text-center"
+                    >
+                      #
+                    </th>
+                    <th
+                      class="p-4 font-label-md text-label-md text-on-surface font-bold min-w-[300px]"
+                    >
+                      Question Text
+                    </th>
+                    <th
+                      class="p-4 font-label-md text-label-md text-on-surface font-bold min-w-[200px]"
+                    >
+                      Options (A - D)
+                    </th>
+                    <th
+                      class="p-4 font-label-md text-label-md text-on-surface font-bold w-32"
+                    >
+                      Correct
+                    </th>
+                    <th
+                      class="p-4 font-label-md text-label-md text-on-surface font-bold w-24 text-center"
+                    >
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  class="font-body-md text-body-md text-on-surface divide-y divide-outline-variant"
+                >
+                  <tr class="hover:bg-surface-container/50 transition-colors">
+                    <td class="p-4 text-center text-on-surface-variant">1</td>
+                    <td class="p-4">Solve for x: 2x + 5 = 15</td>
+                    <td class="p-4 text-sm text-on-surface-variant">
+                      <div class="grid grid-cols-2 gap-1">
+                        <span>A) 2</span><span>B) 5</span> <span>C) 10</span
+                        ><span>D) 20</span>
+                      </div>
+                    </td>
+                    <td class="p-4 font-bold text-on-surface">B</td>
+                    <td class="p-4 text-center">
+                      <span class="material-symbols-outlined text-status-synced"
+                        >check_circle</span
+                      >
+                    </td>
+                  </tr>
+                  <tr
+                    class="hover:bg-surface-container/50 transition-colors bg-error-container/20"
+                  >
+                    <td class="p-4 text-center text-on-surface-variant">2</td>
+                    <td class="p-4">What is the capital of Nigeria?</td>
+                    <td class="p-4 text-sm text-on-surface-variant">
+                      <div class="grid grid-cols-2 gap-1">
+                        <span>A) Lagos</span><span>B) Abuja</span>
+                        <span class="text-error font-semibold italic"
+                          >Missing C</span
+                        ><span>D) Kano</span>
+                      </div>
+                    </td>
+                    <td class="p-4 font-bold text-on-surface">B</td>
+                    <td class="p-4 text-center">
+                      <span
+                        class="material-symbols-outlined text-status-error cursor-help"
+                        title="Missing Option C"
+                        >error</span
+                      >
+                    </td>
+                  </tr>
+                  <tr class="hover:bg-surface-container/50 transition-colors">
+                    <td class="p-4 text-center text-on-surface-variant">3</td>
+                    <td class="p-4">
+                      Identify the noun in the sentence: "The quick brown fox."
+                    </td>
+                    <td class="p-4 text-sm text-on-surface-variant">
+                      <div class="grid grid-cols-2 gap-1">
+                        <span>A) quick</span><span>B) brown</span>
+                        <span>C) fox</span><span>D) The</span>
+                      </div>
+                    </td>
+                    <td class="p-4 font-bold text-on-surface">C</td>
+                    <td class="p-4 text-center">
+                      <span class="material-symbols-outlined text-status-synced"
+                        >check_circle</span
+                      >
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="mt-4 flex justify-end gap-3">
+              <button
+                class="px-6 py-2 rounded-lg bg-surface border border-outline-variant text-on-surface font-label-md text-label-md hover:bg-surface-variant transition-colors"
+                type="button"
+              >
+                Discard
+              </button>
+              <button
+                class="px-6 py-2 rounded-lg bg-primary-container text-on-surface font-label-md text-label-md shadow-sm hover:shadow-md transition-all opacity-50 cursor-not-allowed"
+                type="button"
+              >
+                Import Verified Questions
+              </button>
+            </div>
+          </section>
+          <!-- Actions -->
+          <div
+            class="flex justify-end gap-4 pt-4 pb-12 border-t border-outline-variant"
+          >
+            <button
+              class="px-8 py-3 rounded-lg bg-surface border border-outline-variant text-on-surface font-headline-md text-headline-md hover:bg-surface-variant transition-colors font-semibold"
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              class="px-8 py-3 rounded-lg bg-primary-container text-on-surface font-headline-md text-headline-md font-semibold shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+              type="submit"
+            >
+              Save Exam Draft
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+    <script>
+      // Simple drag and drop visual interaction
+      const dropzone = document.getElementById("dropzone");
+
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      ["dragenter", "dragover"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, highlight, false);
+      });
+
+      ["dragleave", "drop"].forEach((eventName) => {
+        dropzone.addEventListener(eventName, unhighlight, false);
+      });
+
+      function highlight(e) {
+        dropzone.classList.add("drag-active");
+      }
+
+      function unhighlight(e) {
+        dropzone.classList.remove("drag-active");
+      }
+    </script>
+  </body>
+</html>

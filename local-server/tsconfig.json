@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "types": ["node"],
+    /**
+     * `@/*` points at the CLOUD repo root, deliberately mirroring the alias the cloud
+     * app uses for itself. That is what lets this server import the shared exam rules by
+     * the exact same specifier the cloud uses (`@/lib/timing`, `@/lib/core/grading-rules`),
+     * so the two runtimes execute the same code rather than two copies of it.
+     *
+     * Only modules with no runtime dependency on `@prisma/client`, `next/*` or a database
+     * may be imported this way — see the header of lib/core/grading-rules.ts. Everything
+     * currently shared satisfies that: timing, shuffle, pin, errors, core/domain,
+     * core/grading-rules, auth/student-credentials.
+     */
+    "paths": {
+      "@/*": ["../*"],
+      "@local/*": ["./src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

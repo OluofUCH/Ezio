@@ -1,0 +1,163 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ------------------------------------------------------------------ *
+ * Base
+ * ------------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  background-color: theme('colors.background');
+  color: theme('colors.on-background');
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Material Symbols — the icon set the Stitch screens use throughout. */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* ------------------------------------------------------------------ *
+ * Component classes carried over from the Stitch reference screens
+ * ------------------------------------------------------------------ */
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 1);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 1);
+    border-bottom: 1px solid theme('colors.surface-container-highest');
+  }
+
+  /* Exam option tiles — lift on hover, ring when chosen. */
+  .option-card {
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease;
+  }
+
+  .option-card:hover:not(.option-selected) {
+    transform: translateY(-2px);
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.1),
+      0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  }
+
+  .option-selected {
+    border-color: theme('colors.primary-container');
+    background-color: theme('colors.background');
+    box-shadow: 0 0 0 4px rgba(168, 217, 62, 0.1);
+  }
+
+  /**
+   * Question-map dots. `answered` is blue rather than the lemon primary on purpose:
+   * lemon is reserved for "current", and a student scanning the map needs those two
+   * states to be unmistakable at a glance.
+   */
+  .progress-dot-answered {
+    background-color: theme('colors.secondary-container');
+    color: #ffffff;
+    border: none;
+  }
+
+  .progress-dot-current {
+    border: 2px solid theme('colors.primary-container');
+    background-color: #ffffff;
+    color: theme('colors.on-primary-container');
+  }
+
+  .progress-dot-flagged {
+    background-color: theme('colors.error');
+    color: #ffffff;
+    border: none;
+  }
+
+  .progress-dot-unanswered {
+    background-color: theme('colors.surface-container-highest');
+    color: theme('colors.on-surface-variant');
+    border: none;
+  }
+
+  .drag-active {
+    border-color: theme('colors.primary-container') !important;
+    background-color: rgba(168, 217, 62, 0.05) !important;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-outline-variant bg-[#F9FAFB] px-4 py-3 font-body-md text-body-md text-on-surface outline-none transition-colors placeholder:text-outline focus:border-primary-container focus:bg-white;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 font-label-md text-label-md font-bold text-on-surface shadow-sm transition-all hover:bg-primary-fixed hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container disabled:active:scale-100;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface px-6 py-3 font-label-md text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-variant disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-error px-6 py-3 font-label-md text-label-md font-bold uppercase tracking-wider text-on-error shadow-md transition-colors hover:bg-[#a30005] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .card {
+    @apply rounded-xl border border-border-subtle bg-surface shadow-level-1;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Utilities
+ * ------------------------------------------------------------------ */
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: theme('colors.outline-variant');
+    border-radius: 9999px;
+  }
+
+  /* Tabular digits keep an exam countdown from jittering as it ticks. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}

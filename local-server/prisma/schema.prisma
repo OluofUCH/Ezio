@@ -1,0 +1,190 @@
+// ============================================================
+// CBT LOCAL SERVER — the machine that runs an exam hall offline
+// ============================================================
+//
+// Mirrors the cloud's Postgres schema closely enough that the shared exam rules in
+// ../lib/core work unchanged, with two forced differences:
+//
+//   1. NO ENUMS. SQLite has no enum type and Prisma will not emulate one, so every
+//      enum column is `String`. The values are identical to the cloud's, validated on
+//      the way in by Zod and by the guards in ../lib/core/domain.ts.
+//   2. JSON IS TEXT. `securityFlags` and `selectedOptionIds` hold JSON-encoded strings
+//      rather than a native Json column, and are parsed at the boundary.
+//
+// This database is a CACHE plus a short-lived write-ahead log. The staged exam, the
+// roster and the answer key are copies the cloud can always regenerate. The only data
+// that exists *nowhere else* is a sitting that has not yet been pushed — which is why
+// `syncedAt` is the field the push logic keys off, and why the runbook says never to
+// re-image a hall machine before its last push has been confirmed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("LOCAL_DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// DEVICE IDENTITY + SYNC BOOKKEEPING
+// ------------------------------------------------------------
+
+// Single-row table. The device learns its own identity from the pull response rather
+// than from configuration, so a machine cannot be mis-labelled by a typo in a .env and
+// then push results tagged as the wrong hall.
+model SyncState {
+  id              String    @id @default("singleton")
+  localServerId   String
+  localServerName String
+  schoolId        String
+  schoolName      String
+  // Required for offline login: `validateStudentCredentials` resolves a student by
+  // (schoolSlug, regNumber), so without this nobody can sign in.
+  schoolSlug      String
+  lastPulledAt    DateTime?
+  lastPushedAt    DateTime?
+  // Cloud clock at the last pull, compared against the local clock to warn about drift.
+  cloudTimeAtPull DateTime?
+}
+
+// ------------------------------------------------------------
+// STAGED EXAM CONTENT (pulled from the cloud, read-only here)
+// ------------------------------------------------------------
+
+model Exam {
+  id               String    @id // the cloud's id, reused so push needs no mapping
+  title            String
+  subject          String
+  classLevel       String
+  durationMins     Int
+  mode             String
+  shuffleQuestions Boolean
+  shuffleOptions   Boolean
+  maxAttempts      Int
+  startWindow      DateTime?
+  endWindow        DateTime?
+  isPublished      Boolean   @default(true)
+  pulledAt         DateTime  @default(now())
+
+  questions    Question[]
+  examSessions ExamSession[]
+}
+
+model Question {
+  id         String @id
+  examId     String
+  text       String
+  type       String
+  points     Int
+  orderIndex Int
+
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options Option[]
+  answers Answer[]
+
+  @@index([examId])
+}
+
+// Holds `isCorrect` — the answer key. It has to: this machine grades with no internet.
+model Option {
+  id         String  @id
+  questionId String
+  text       String
+  isCorrect  Boolean
+  orderIndex Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+// Cached roster for one class level, including plaintext PINs — the credentials offline
+// login compares against. `id` is the cloud's student id, sent back on push so the cloud
+// attaches each result to the right student with no name matching.
+model Student {
+  id         String @id
+  regNumber  String @unique
+  pin        String
+  fullName   String
+  classLevel String
+
+  examSessions   ExamSession[]
+  deviceSessions DeviceSession[]
+}
+
+// ------------------------------------------------------------
+// LOGIN SESSIONS (student browsers on the LAN)
+// ------------------------------------------------------------
+
+// Opaque bearer tokens in a table, rather than JWTs.
+//
+// A JWT would need a signing secret provisioned onto every hall machine, and an
+// in-memory map would sign every student out if the process restarted mid-exam — the
+// single worst moment for it to happen. A row survives a restart and is revocable.
+model DeviceSession {
+  token     String   @id
+  studentId String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+// ------------------------------------------------------------
+// SITTINGS (the only locally-originated data — must survive until pushed)
+// ------------------------------------------------------------
+
+model ExamSession {
+  // Generated here, and sent to the cloud as `localId`. Together with the device's
+  // localServerId it forms the cloud's idempotency key, so a retried push cannot
+  // create a duplicate sitting.
+  id            String    @id @default(cuid())
+  examId        String
+  studentId     String
+  status        String    @default("IN_PROGRESS")
+  startedAt     DateTime  @default(now())
+  submittedAt   DateTime?
+  // Graded locally so a student sees their score immediately, exactly as online. The
+  // cloud independently re-grades on push and its verdict is authoritative — these two
+  // agree because both call the same `gradeAnswer` (../lib/core/grading-rules.ts).
+  score         Float?
+  maxScore      Float?
+  // JSON array as TEXT.
+  securityFlags String?
+  // null = still owed to the cloud. The single most important column in this file.
+  syncedAt      DateTime?
+  syncVersion   Int       @default(1)
+
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  // No partial unique index for "one IN_PROGRESS per (exam, student)" — SQLite via
+  // Prisma cannot express one, and the cloud's equivalent is declared in raw migration
+  // SQL. Here the guard is application-level: /start looks for an open session inside a
+  // transaction, which is sufficient because this is a single Node process serving one
+  // hall rather than a horizontally-scaled API.
+  @@index([examId, studentId])
+  @@index([syncedAt])
+}
+
+model Answer {
+  id               String   @id @default(cuid())
+  examSessionId    String
+  questionId       String
+  selectedOptionId String?
+  // JSON array as TEXT, for MULTIPLE_CHOICE.
+  selectedOptionIds String?
+  answeredAt       DateTime @default(now())
+  isCorrect        Boolean?
+  pointsAwarded    Float?
+
+  examSession ExamSession @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  question    Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([examSessionId, questionId])
+  @@index([examSessionId])
+}

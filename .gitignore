@@ -1,0 +1,46 @@
+# ---- deps / build ----
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ---- env & secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- prisma ----
+# migrations ARE committed; local dev databases are not
+prisma/*.db
+prisma/*.db-journal
+prisma/dev.db*
+local-server/data/
+packaging/windows/stage/
+packaging/windows/cache/
+
+# ---- generated templates / uploads ----
+/templates/*.xlsx
+/templates/*.csv
+/uploads/
+
+# ---- tooling ----
+.claude/
+.vercel/
+coverage/
+.eslintcache
+
+# ---- editor / OS ----
+.vscode/*
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- logs ----
+*.log
+npm-debug.log*
+yarn-error.log*

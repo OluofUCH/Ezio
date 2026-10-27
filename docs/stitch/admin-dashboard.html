@@ -1,0 +1,715 @@
+<!doctype html>
+
+<html class="light" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Ezio Nigeria - Admin Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "tertiary-fixed": "#fdd6ff",
+              "primary-container": "#a8d93e",
+              "error-container": "#ffdad6",
+              "primary-fixed": "#c1f356",
+              "inverse-surface": "#2f3133",
+              "status-synced": "#2563EB",
+              "primary-fixed-dim": "#a6d63c",
+              "on-error-container": "#93000a",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-fixed": "#141f00",
+              "on-tertiary-fixed-variant": "#673073",
+              secondary: "#0051d5",
+              "outline-variant": "#c4c9b1",
+              error: "#ba1a1a",
+              "on-error": "#ffffff",
+              "secondary-fixed": "#dbe1ff",
+              "surface-container-low": "#f3f3f6",
+              "on-surface": "#1a1c1e",
+              "on-primary": "#ffffff",
+              "status-error": "#EF4444",
+              "surface-bright": "#f9f9fc",
+              "on-primary-container": "#425c00",
+              "secondary-container": "#316bf3",
+              "inverse-on-surface": "#f0f0f3",
+              primary: "#4a6700",
+              "on-surface-variant": "#434936",
+              "on-secondary-container": "#fefcff",
+              "status-pending": "#F59E0B",
+              "on-tertiary-container": "#763e82",
+              background: "#f9f9fc",
+              "surface-container": "#eeeef0",
+              tertiary: "#81488d",
+              "surface-container-highest": "#e2e2e5",
+              outline: "#747964",
+              "surface-dim": "#dadadc",
+              "on-secondary-fixed-variant": "#003ea8",
+              surface: "#FFFFFF",
+              "secondary-fixed-dim": "#b4c5ff",
+              "surface-tint": "#4a6700",
+              "on-secondary-fixed": "#00174b",
+              "inverse-primary": "#a6d63c",
+              "border-subtle": "#E5E7EB",
+              "on-primary-fixed-variant": "#374e00",
+              "tertiary-container": "#f5b2ff",
+              "tertiary-fixed-dim": "#f2affc",
+              "on-tertiary-fixed": "#340042",
+              "on-secondary": "#ffffff",
+              "on-background": "#1a1c1e",
+              "surface-variant": "#e2e2e5",
+              "surface-container-high": "#e8e8ea",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              "sidebar-width": "260px",
+              gutter: "24px",
+              "margin-mobile": "16px",
+              "margin-desktop": "32px",
+              base: "8px",
+            },
+            fontFamily: {
+              "headline-lg": ["Hanken Grotesk"],
+              "headline-md": ["Hanken Grotesk"],
+              "label-sm": ["Hanken Grotesk"],
+              "body-md": ["Hanken Grotesk"],
+              "body-lg": ["Hanken Grotesk"],
+              "headline-lg-mobile": ["Hanken Grotesk"],
+              "display-lg": ["Hanken Grotesk"],
+              "label-md": ["Hanken Grotesk"],
+            },
+            fontSize: {
+              "headline-lg": [
+                "32px",
+                {
+                  lineHeight: "40px",
+                  letterSpacing: "-0.01em",
+                  fontWeight: "600",
+                },
+              ],
+              "headline-md": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  fontWeight: "600",
+                },
+              ],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "16px",
+                  letterSpacing: "0.05em",
+                  fontWeight: "600",
+                },
+              ],
+              "body-md": [
+                "16px",
+                {
+                  lineHeight: "24px",
+                  fontWeight: "400",
+                },
+              ],
+              "body-lg": [
+                "18px",
+                {
+                  lineHeight: "28px",
+                  fontWeight: "400",
+                },
+              ],
+              "headline-lg-mobile": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  fontWeight: "600",
+                },
+              ],
+              "display-lg": [
+                "48px",
+                {
+                  lineHeight: "56px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "700",
+                },
+              ],
+              "label-md": [
+                "14px",
+                {
+                  lineHeight: "20px",
+                  letterSpacing: "0.01em",
+                  fontWeight: "600",
+                },
+              ],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Hanken Grotesk", sans-serif;
+      }
+
+      .glass-panel {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+      }
+
+      .shadow-level-1 {
+        box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-on-background antialiased min-h-screen flex overflow-hidden"
+  >
+    <!-- SideNavBar -->
+    <aside
+      class="fixed left-0 top-0 h-screen w-sidebar-width bg-surface border-r border-outline-variant flex flex-col z-50"
+    >
+      <div class="p-6 border-b border-outline-variant flex items-center gap-4">
+        <img
+          alt="Institution Logo"
+          class="w-10 h-10 rounded-lg object-cover"
+          data-alt="A clean, modern logo for an educational institution, primarily using white and light blue geometric shapes on a transparent background, ensuring high contrast against a dark background."
+          src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzdLvmRNEQ61uyjFrUK416diiAmZpoP4rARLOjdSJjikjVh_FOoPRl1ZsxWICVYJdPaRXhZvisWNKQHhrgXHRmfWUk_gBJX9Na3b0RkDKl-pKiZ7c1dah7f2UoQWauZ-9R5oDQ2YuuQoMi5CAjH13cvUFcCk7AmfujaxKhNKwdJKbvpR-lYV9lEXYLkJU_DUqLnyvUjgewn_mRHAr47LoM7Wagf2kOxi9Im4kwN45tHb1qEhVXQR7QsA"
+        />
+        <div>
+          <h1
+            class="font-headline-md text-headline-md font-bold text-on-surface"
+          >
+            Ezio Nigeria
+          </h1>
+          <p
+            class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider"
+          >
+            Admin Portal
+          </p>
+        </div>
+      </div>
+      <div class="p-4">
+        <button
+          class="w-full bg-primary-container hover:bg-primary-fixed transition-colors text-on-surface font-label-md text-label-md py-3 rounded-lg flex items-center justify-center gap-2 shadow-sm active:scale-95 transition-transform"
+        >
+          <span
+            class="material-symbols-outlined"
+            style="font-variation-settings: &quot;FILL&quot; 1"
+            >add_circle</span
+          >
+          Take New Exam
+        </button>
+      </div>
+      <nav class="flex flex-col p-4 gap-2 flex-grow overflow-y-auto">
+        <!-- Active Tab -->
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary-container/20 border-l-4 border-primary-container text-on-surface font-bold active:scale-95 transition-transform"
+          href="#"
+        >
+          <span
+            class="material-symbols-outlined text-primary-container"
+            style="font-variation-settings: &quot;FILL&quot; 1"
+            >dashboard</span
+          >
+          <span class="font-label-md text-label-md">Dashboard</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">quiz</span>
+          <span class="font-label-md text-label-md">My Exams</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">assessment</span>
+          <span class="font-label-md text-label-md">Results</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">group</span>
+          <span class="font-label-md text-label-md">Students</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">school</span>
+          <span class="font-label-md text-label-md">Teachers</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">database</span>
+          <span class="font-label-md text-label-md">Question Bank</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">dns</span>
+          <span class="font-label-md text-label-md">Local Servers</span>
+        </a>
+      </nav>
+      <div
+        class="mt-auto p-4 border-t border-outline-variant flex flex-col gap-2 bg-surface"
+      >
+        <a
+          class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">settings</span>
+          <span class="font-label-md text-label-md">Settings</span>
+        </a>
+        <a
+          class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all duration-200"
+          href="#"
+        >
+          <span class="material-symbols-outlined">logout</span>
+          <span class="font-label-md text-label-md">Logout</span>
+        </a>
+      </div>
+    </aside>
+    <!-- Main Content Wrapper -->
+    <div
+      class="flex-1 flex flex-col ml-[260px] w-[calc(100%-260px)] h-screen overflow-hidden"
+    >
+      <!-- TopNavBar -->
+      <header
+        class="flex justify-between items-center h-16 px-margin-desktop bg-surface shadow-sm border-b border-outline-variant z-40 shrink-0"
+      >
+        <div class="flex items-center gap-4">
+          <h2
+            class="font-headline-md text-headline-md font-extrabold text-on-surface hidden md:block"
+          >
+            Ezio
+          </h2>
+          <!-- Search bar on left -->
+          <div class="relative hidden sm:block w-64 ml-4">
+            <span
+              class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 pointer-events-none"
+              >search</span
+            >
+            <input
+              class="w-full bg-surface-container-low border-none rounded-full py-2 pl-10 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary-container transition-shadow"
+              placeholder="Search students, exams..."
+              type="text"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <button
+            class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 relative p-2 rounded-full hover:bg-surface-container-low"
+          >
+            <span class="material-symbols-outlined">notifications</span>
+            <span
+              class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-status-error rounded-full border-2 border-surface"
+            ></span>
+          </button>
+          <button
+            class="text-on-surface-variant hover:text-on-surface transition-colors duration-200 p-2 rounded-full hover:bg-surface-container-low hidden sm:block"
+          >
+            <span class="material-symbols-outlined">help</span>
+          </button>
+          <div
+            class="h-8 w-px bg-outline-variant/50 mx-2 hidden sm:block"
+          ></div>
+          <button
+            class="flex items-center gap-2 cursor-pointer p-1 rounded-full hover:bg-surface-container-low transition-colors duration-200"
+          >
+            <img
+              alt="User Profile"
+              class="w-8 h-8 rounded-full object-cover border border-outline-variant"
+              data-alt="A professional headshot of a Nigerian school administrator in their late 40s, wearing business casual attire, smiling warmly against a soft grey studio background with bright, even lighting."
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ17ZCi026HskCJclRTp6svYNXLvAbktvyQUxl9_PFVN2GxgLew4XoPHl8hh04ARn6Lxkso0ueAHRnB6LwdaMcZrh8l16h0r61koWSVt_o9lHGOM3V6oRUuKIF2D_4GHs1Vv7JAqwR79zohOcmn36FijHIjaLCBkZlZk-Wxoz4vK15VxizvrmfRbD3xXCOgL0CWOzBverRSnk_P1n0j6jBKncn7Li1lvmX-vUXf1qUsmZ8KR0Th6x0Wg"
+            />
+            <span class="material-symbols-outlined text-on-surface-variant"
+              >arrow_drop_down</span
+            >
+          </button>
+        </div>
+      </header>
+      <!-- Scrollable Canvas -->
+      <main class="flex-1 overflow-y-auto p-gutter bg-background">
+        <div class="max-w-[1440px] mx-auto space-y-8 pb-12">
+          <!-- Page Header -->
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4"
+          >
+            <div>
+              <h2 class="font-headline-lg text-headline-lg text-on-surface">
+                Overview
+              </h2>
+              <p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Monitor school-wide CBT activities and server health.
+              </p>
+            </div>
+            <p
+              class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider bg-surface-container-high px-3 py-1 rounded-full"
+            >
+              Last sync: Today, 08:45 AM
+            </p>
+          </div>
+          <!-- Bento Grid Layout -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+            <!-- Overview Cards (Row 1) -->
+            <div
+              class="md:col-span-4 bg-surface-container-lowest rounded-xl p-8 shadow-level-1 relative overflow-hidden group hover:shadow-md transition-shadow duration-300"
+            >
+              <div class="flex justify-between items-start mb-6">
+                <div
+                  class="p-3 bg-primary-container/20 rounded-lg text-on-surface"
+                >
+                  <span class="material-symbols-outlined">group</span>
+                </div>
+                <span
+                  class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1 bg-surface-container-low px-2 py-1 rounded"
+                >
+                  <span class="material-symbols-outlined text-[16px]"
+                    >trending_up</span
+                  >
+                  +2.4%
+                </span>
+              </div>
+              <p
+                class="font-label-md text-label-md text-on-surface-variant mb-1"
+              >
+                Total Students
+              </p>
+              <h3 class="font-display-lg text-display-lg text-on-surface">
+                3,240
+              </h3>
+            </div>
+            <div
+              class="md:col-span-4 bg-surface-container-lowest rounded-xl p-8 shadow-level-1 relative overflow-hidden group hover:shadow-md transition-shadow duration-300"
+            >
+              <div class="flex justify-between items-start mb-6">
+                <div
+                  class="p-3 bg-surface-container-low rounded-lg text-on-surface"
+                >
+                  <span class="material-symbols-outlined">school</span>
+                </div>
+                <span
+                  class="font-label-md text-label-md text-on-surface-variant font-semibold bg-surface-variant px-2 py-1 rounded"
+                >
+                  Stable
+                </span>
+              </div>
+              <p
+                class="font-label-md text-label-md text-on-surface-variant mb-1"
+              >
+                Active Teachers
+              </p>
+              <h3 class="font-display-lg text-display-lg text-on-surface">
+                142
+              </h3>
+            </div>
+            <div
+              class="md:col-span-4 bg-surface-container-lowest rounded-xl p-8 shadow-level-1 relative overflow-hidden group hover:shadow-md transition-shadow duration-300"
+            >
+              <div class="flex justify-between items-start mb-6">
+                <div
+                  class="p-3 bg-primary-container rounded-lg text-on-surface"
+                >
+                  <span class="material-symbols-outlined">event_note</span>
+                </div>
+                <span
+                  class="font-label-md text-label-md bg-status-error text-on-error font-bold px-2 py-1 rounded shadow-sm"
+                >
+                  LIVE
+                </span>
+              </div>
+              <p
+                class="font-label-md text-label-md text-on-surface-variant mb-1"
+              >
+                Exams Today
+              </p>
+              <h3 class="font-display-lg text-display-lg text-on-surface">
+                12
+              </h3>
+              <p
+                class="font-label-sm text-label-sm text-on-surface-variant mt-2"
+              >
+                4 currently in progress
+              </p>
+            </div>
+            <!-- Row 2 -->
+            <!-- Local Server Status -->
+            <div
+              class="md:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-level-1 border border-outline-variant/30"
+            >
+              <div
+                class="flex justify-between items-center mb-6 border-b border-outline-variant/30 pb-4"
+              >
+                <h3
+                  class="font-headline-md text-headline-md text-on-surface flex items-center gap-2"
+                >
+                  <span class="material-symbols-outlined text-on-surface"
+                    >dns</span
+                  >
+                  Local Server Status
+                </h3>
+                <button
+                  class="font-label-md text-label-md text-on-surface hover:underline flex items-center gap-1"
+                >
+                  Manage
+                  <span class="material-symbols-outlined text-[18px]"
+                    >arrow_forward</span
+                  >
+                </button>
+              </div>
+              <div class="space-y-4">
+                <!-- Server Item -->
+                <div
+                  class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant/20 hover:border-outline transition-colors"
+                >
+                  <div class="flex items-center gap-4">
+                    <div
+                      class="w-3 h-3 rounded-full bg-status-synced shadow-[0_0_8px_rgba(37,99,235,0.5)]"
+                    ></div>
+                    <div>
+                      <p
+                        class="font-label-md text-label-md text-on-surface font-semibold"
+                      >
+                        Main Lab Server (A1)
+                      </p>
+                      <p
+                        class="font-body-md text-body-md text-on-surface-variant text-sm"
+                      >
+                        IP: 192.168.1.101
+                      </p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-label-md text-label-md text-status-synced">
+                      Synced
+                    </p>
+                    <p
+                      class="font-body-md text-body-md text-on-surface-variant text-sm"
+                    >
+                      2 mins ago
+                    </p>
+                  </div>
+                </div>
+                <!-- Server Item -->
+                <div
+                  class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant/20 hover:border-outline transition-colors"
+                >
+                  <div class="flex items-center gap-4">
+                    <div
+                      class="w-3 h-3 rounded-full bg-status-synced shadow-[0_0_8px_rgba(37,99,235,0.5)]"
+                    ></div>
+                    <div>
+                      <p
+                        class="font-label-md text-label-md text-on-surface font-semibold"
+                      >
+                        Library Server (B2)
+                      </p>
+                      <p
+                        class="font-body-md text-body-md text-on-surface-variant text-sm"
+                      >
+                        IP: 192.168.1.102
+                      </p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-label-md text-label-md text-status-synced">
+                      Synced
+                    </p>
+                    <p
+                      class="font-body-md text-body-md text-on-surface-variant text-sm"
+                    >
+                      15 mins ago
+                    </p>
+                  </div>
+                </div>
+                <!-- Server Item (Warning) -->
+                <div
+                  class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant/20 hover:border-outline transition-colors"
+                >
+                  <div class="flex items-center gap-4">
+                    <div
+                      class="w-3 h-3 rounded-full bg-status-pending shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse"
+                    ></div>
+                    <div>
+                      <p
+                        class="font-label-md text-label-md text-on-surface font-semibold"
+                      >
+                        Annex Server (C3)
+                      </p>
+                      <p
+                        class="font-body-md text-body-md text-status-pending text-sm"
+                      >
+                        IP: 192.168.1.105 - Connection unstable
+                      </p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-label-md text-label-md text-status-pending">
+                      Sync Pending
+                    </p>
+                    <p
+                      class="font-body-md text-body-md text-on-surface-variant text-sm"
+                    >
+                      2 hours ago
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Side Column (Row 2) -->
+            <div class="md:col-span-4 flex flex-col gap-gutter">
+              <!-- Bulk Import -->
+              <div
+                class="bg-surface-container-lowest rounded-xl p-8 shadow-level-1 border border-outline-variant/30 flex-1"
+              >
+                <h3
+                  class="font-headline-md text-headline-md text-on-surface mb-2"
+                >
+                  Bulk Import
+                </h3>
+                <p
+                  class="font-body-md text-body-md text-on-surface-variant mb-6 text-sm"
+                >
+                  Upload CSV or Excel for students/staff.
+                </p>
+                <div
+                  class="border-2 border-dashed border-outline-variant rounded-lg p-6 flex flex-col items-center justify-center text-center bg-surface-container-low/50 hover:bg-surface-container-low transition-colors cursor-pointer group"
+                >
+                  <div
+                    class="p-3 bg-surface-container-high rounded-full text-on-surface mb-3 group-hover:scale-110 transition-transform"
+                  >
+                    <span class="material-symbols-outlined">upload_file</span>
+                  </div>
+                  <p class="font-label-md text-label-md text-on-surface mb-1">
+                    Click to upload or drag &amp; drop
+                  </p>
+                  <p
+                    class="font-label-sm text-label-sm text-on-surface-variant"
+                  >
+                    CSV, XLSX (max. 10MB)
+                  </p>
+                </div>
+                <button
+                  class="w-full mt-4 bg-primary-container hover:bg-primary-fixed text-on-surface font-label-md text-label-md py-2.5 rounded-lg shadow-sm transition-colors"
+                >
+                  Download Template
+                </button>
+              </div>
+              <!-- Recent Activity -->
+              <div
+                class="bg-surface-container-lowest rounded-xl p-6 shadow-level-1 border border-outline-variant/30 flex-1"
+              >
+                <h3
+                  class="font-headline-md text-headline-md text-on-surface mb-4"
+                >
+                  Recent Activity
+                </h3>
+                <div class="space-y-4">
+                  <div class="flex gap-3">
+                    <div class="mt-1">
+                      <div
+                        class="w-2 h-2 rounded-full bg-status-synced ring-4 ring-status-synced/20"
+                      ></div>
+                    </div>
+                    <div>
+                      <p class="font-label-md text-label-md text-on-surface">
+                        Data Sync Completed
+                      </p>
+                      <p
+                        class="font-label-sm text-label-sm text-on-surface-variant"
+                      >
+                        Main Lab Server • 08:45 AM
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex gap-3">
+                    <div class="mt-1">
+                      <div
+                        class="w-2 h-2 rounded-full bg-primary-container ring-4 ring-primary-container/20"
+                      ></div>
+                    </div>
+                    <div>
+                      <p class="font-label-md text-label-md text-on-surface">
+                        New Exam Published
+                      </p>
+                      <p
+                        class="font-label-sm text-label-sm text-on-surface-variant"
+                      >
+                        JSS3 Mathematics • Yesterday
+                      </p>
+                    </div>
+                  </div>
+                  <div class="flex gap-3">
+                    <div class="mt-1">
+                      <div
+                        class="w-2 h-2 rounded-full bg-outline ring-4 ring-surface-variant"
+                      ></div>
+                    </div>
+                    <div>
+                      <p class="font-label-md text-label-md text-on-surface">
+                        Admin Login
+                      </p>
+                      <p
+                        class="font-label-sm text-label-sm text-on-surface-variant"
+                      >
+                        Mr. Adebayo • Yesterday
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Footer (from JSON) -->
+        <footer
+          class="w-full py-4 border-t border-outline-variant flex justify-between items-center bg-surface-container-lowest mt-8 rounded-xl px-6"
+        >
+          <p class="font-label-sm text-label-sm text-on-surface-variant">
+            © 2024 Ezio Nigeria v2.4.1
+          </p>
+          <div class="flex gap-4">
+            <a
+              class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+              href="#"
+              >Technical Support</a
+            >
+            <a
+              class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+              href="#"
+              >Privacy Policy</a
+            >
+            <a
+              class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface transition-colors"
+              href="#"
+              >User Manual</a
+            >
+          </div>
+        </footer>
+      </main>
+    </div>
+  </body>
+</html>

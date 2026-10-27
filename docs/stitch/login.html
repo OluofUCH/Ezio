@@ -1,0 +1,398 @@
+<!doctype html>
+<html class="light" lang="en" style="">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Ezio Nigeria - Login</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-tertiary": "#ffffff",
+              "tertiary-fixed": "#fdd6ff",
+              "primary-container": "#a8d93e",
+              "error-container": "#ffdad6",
+              "primary-fixed": "#c1f356",
+              "inverse-surface": "#2f3133",
+              "status-synced": "#2563EB",
+              "primary-fixed-dim": "#a6d63c",
+              "on-error-container": "#93000a",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-fixed": "#141f00",
+              "on-tertiary-fixed-variant": "#673073",
+              secondary: "#0051d5",
+              "outline-variant": "#c4c9b1",
+              error: "#ba1a1a",
+              "on-error": "#ffffff",
+              "secondary-fixed": "#dbe1ff",
+              "surface-container-low": "#f3f3f6",
+              "on-surface": "#1a1c1e",
+              "on-primary": "#ffffff",
+              "status-error": "#EF4444",
+              "surface-bright": "#f9f9fc",
+              "on-primary-container": "#425c00",
+              "secondary-container": "#316bf3",
+              "inverse-on-surface": "#f0f0f3",
+              primary: "#4a6700",
+              "on-surface-variant": "#434936",
+              "on-secondary-container": "#fefcff",
+              "status-pending": "#F59E0B",
+              "on-tertiary-container": "#763e82",
+              background: "#f9f9fc",
+              "surface-container": "#eeeef0",
+              tertiary: "#81488d",
+              "surface-container-highest": "#e2e2e5",
+              outline: "#747964",
+              "surface-dim": "#dadadc",
+              "on-secondary-fixed-variant": "#003ea8",
+              surface: "#FFFFFF",
+              "secondary-fixed-dim": "#b4c5ff",
+              "surface-tint": "#4a6700",
+              "on-secondary-fixed": "#00174b",
+              "inverse-primary": "#a6d63c",
+              "border-subtle": "#E5E7EB",
+              "on-primary-fixed-variant": "#374e00",
+              "tertiary-container": "#f5b2ff",
+              "tertiary-fixed-dim": "#f2affc",
+              "on-tertiary-fixed": "#340042",
+              "on-secondary": "#ffffff",
+              "on-background": "#1a1c1e",
+              "surface-variant": "#e2e2e5",
+              "surface-container-high": "#e8e8ea",
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              lg: "0.5rem",
+              xl: "0.75rem",
+              full: "9999px",
+            },
+            spacing: {
+              "sidebar-width": "260px",
+              gutter: "24px",
+              "margin-mobile": "16px",
+              "margin-desktop": "32px",
+              base: "8px",
+            },
+            fontFamily: {
+              "headline-lg": ["Hanken Grotesk"],
+              "headline-md": ["Hanken Grotesk"],
+              "label-sm": ["Hanken Grotesk"],
+              "body-md": ["Hanken Grotesk"],
+              "body-lg": ["Hanken Grotesk"],
+              "headline-lg-mobile": ["Hanken Grotesk"],
+              "display-lg": ["Hanken Grotesk"],
+              "label-md": ["Hanken Grotesk"],
+            },
+            fontSize: {
+              "headline-lg": [
+                "32px",
+                {
+                  lineHeight: "40px",
+                  letterSpacing: "-0.01em",
+                  fontWeight: "600",
+                },
+              ],
+              "headline-md": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  fontWeight: "600",
+                },
+              ],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "16px",
+                  letterSpacing: "0.05em",
+                  fontWeight: "600",
+                },
+              ],
+              "body-md": [
+                "16px",
+                {
+                  lineHeight: "24px",
+                  fontWeight: "400",
+                },
+              ],
+              "body-lg": [
+                "18px",
+                {
+                  lineHeight: "28px",
+                  fontWeight: "400",
+                },
+              ],
+              "headline-lg-mobile": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  fontWeight: "600",
+                },
+              ],
+              "display-lg": [
+                "48px",
+                {
+                  lineHeight: "56px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "700",
+                },
+              ],
+              "label-md": [
+                "14px",
+                {
+                  lineHeight: "20px",
+                  letterSpacing: "0.01em",
+                  fontWeight: "600",
+                },
+              ],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Hanken Grotesk", sans-serif;
+      }
+      .tab-btn.active {
+        background-color: white;
+        color: #1a1c1e;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border-bottom: 2px solid #a8d93e;
+      }
+    </style>
+  </head>
+  <body class="bg-background min-h-screen flex text-on-surface">
+    <!-- Left Side: Login Form -->
+    <div
+      class="w-full lg:w-1/2 flex flex-col justify-center px-margin-mobile md:px-margin-desktop lg:px-[120px] py-12 bg-surface z-10 shadow-[24px_0_40px_rgba(0,0,0,0.06)] relative"
+    >
+      <!-- Brand / Logo -->
+      <div
+        class="absolute top-12 left-margin-mobile md:left-margin-desktop lg:left-[120px] flex items-center gap-3"
+      >
+        <div
+          class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-surface shadow-sm"
+        >
+          <span
+            class="material-symbols-outlined"
+            style="font-variation-settings: &quot;FILL&quot; 1"
+            >school</span
+          >
+        </div>
+        <span
+          class="font-headline-md text-headline-md text-on-surface font-bold"
+          >Ezio Nigeria</span
+        >
+      </div>
+      <div class="w-full max-w-md mx-auto mt-20">
+        <h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">
+          Welcome Back
+        </h1>
+        <p class="font-body-md text-body-md text-on-surface-variant mb-8">
+          Please log in to continue to your dashboard.
+        </p>
+        <!-- Tab Toggle -->
+        <div
+          class="flex p-1 bg-surface-container rounded-lg mb-8"
+          id="login-tabs"
+        >
+          <button
+            class="flex-1 py-2 rounded-md font-label-md text-label-md tab-btn active text-on-surface transition-all"
+            data-tab="student"
+          >
+            Student
+          </button>
+          <button
+            class="flex-1 py-2 rounded-md font-label-md text-label-md tab-btn text-on-surface-variant transition-all"
+            data-tab="admin"
+          >
+            Admin / Teacher
+          </button>
+        </div>
+        <!-- Form: Student -->
+        <form class="space-y-5 block" id="student-form">
+          <div>
+            <label
+              class="block font-label-md text-label-md text-on-surface-variant mb-1"
+              for="reg-number"
+              >Registration Number</label
+            >
+            <div class="relative">
+              <span
+                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+                >badge</span
+              >
+              <input
+                class="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border-2 border-transparent focus:bg-white focus:border-primary-container rounded-lg font-body-md text-body-md transition-colors outline-none"
+                id="reg-number"
+                placeholder="e.g. EDU-2024-001"
+                type="text"
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              class="block font-label-md text-label-md text-on-surface-variant mb-1"
+              for="pin"
+              >Examination PIN</label
+            >
+            <div class="relative">
+              <span
+                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+                >dialpad</span
+              >
+              <input
+                class="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border-2 border-transparent focus:bg-white focus:border-primary-container rounded-lg font-body-md text-body-md transition-colors outline-none"
+                id="pin"
+                placeholder="Enter 6-digit PIN"
+                type="password"
+              />
+            </div>
+          </div>
+          <button
+            class="w-full py-3 bg-primary-container hover:bg-primary-fixed text-on-surface rounded-lg font-label-md text-label-md font-bold transition-all mt-4"
+            type="button"
+          >
+            Access Exam Dashboard
+          </button>
+        </form>
+        <!-- Form: Admin/Teacher (Hidden by default) -->
+        <form class="space-y-5 hidden" id="admin-form">
+          <div>
+            <label
+              class="block font-label-md text-label-md text-on-surface-variant mb-1"
+              for="email"
+              >Institutional Email</label
+            >
+            <div class="relative">
+              <span
+                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+                >mail</span
+              >
+              <input
+                class="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border-2 border-transparent focus:bg-white focus:border-primary-container rounded-lg font-body-md text-body-md transition-colors outline-none"
+                id="email"
+                placeholder="admin@school.edu.ng"
+                type="email"
+              />
+            </div>
+          </div>
+          <div>
+            <label
+              class="block font-label-md text-label-md text-on-surface-variant mb-1"
+              for="password"
+              >Password</label
+            >
+            <div class="relative">
+              <span
+                class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+                >lock</span
+              >
+              <input
+                class="w-full pl-10 pr-4 py-3 bg-[#F9FAFB] border-2 border-transparent focus:bg-white focus:border-primary-container rounded-lg font-body-md text-body-md transition-colors outline-none"
+                id="password"
+                placeholder="••••••••"
+                type="password"
+              />
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <a
+              class="font-label-sm text-label-sm text-primary hover:underline"
+              href="#"
+              >Forgot Password?</a
+            >
+          </div>
+          <button
+            class="w-full py-3 bg-primary-container hover:bg-primary-fixed text-on-surface rounded-lg font-label-md text-label-md font-bold transition-all"
+            type="button"
+          >
+            Sign In
+          </button>
+        </form>
+        <div class="mt-8 pt-6 border-t border-surface-variant text-center">
+          <p class="font-label-sm text-label-sm text-outline">
+            Having trouble logging in?
+            <a class="text-primary hover:underline" href="#">Contact Support</a>
+          </p>
+        </div>
+      </div>
+    </div>
+    <!-- Right Side: Illustration & Branding -->
+    <div
+      class="hidden lg:flex w-1/2 bg-surface-container relative items-center justify-center overflow-hidden"
+    >
+      <!-- Decorative Background Elements -->
+      <div
+        class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary-container rounded-full mix-blend-multiply filter blur-[100px] opacity-50"
+      ></div>
+      <div
+        class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary-container rounded-full mix-blend-multiply filter blur-[100px] opacity-50"
+      ></div>
+      <!-- Glassmorphism Container for Illustration -->
+      <div class="relative w-full h-full">
+        <div
+          class="absolute inset-0 overflow-hidden bg-surface-container-low/50"
+        >
+          <div
+            class="w-full h-full bg-cover bg-center"
+            data-alt="A modern 3D illustration of a vibrant, high-tech classroom setting. Glowing blue and purple digital elements overlay a stylized tablet and exam papers. The scene is lit with soft, high-key lighting characteristic of a sleek SaaS product. A sophisticated palette of crisp whites, deep blues, and subtle purple gradients dominates, conveying a sense of secure, advanced educational technology."
+            style="
+              background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuCjOIFJA3opBC19rELmAwtFLZDhNEvLOxGkqSeplibqRFOnVAGEa6U5-6ulRs4B67ATfICSXTAlbg4z9GryhcyvZ17Khu-nDRWaRSUwT2NQTqjod0yffgn6d9pBUopgfRKM57pdhqPMa8eafolgBeoFkRNYsoRiSSNRTeyeIsKx1QqAYgL_m_6HjT5EodeD6pDoI4AuDE94Fff0kjZhyJd2MAFgb3A5Q3GQ2sSQJVCx1llAJE4rF2sO2l1U4sfLGD_jOIs&quot;);
+            "
+          ></div>
+        </div>
+        <!-- Content Overlay -->
+      </div>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const tabs = document.querySelectorAll(".tab-btn");
+        const studentForm = document.getElementById("student-form");
+        const adminForm = document.getElementById("admin-form");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", () => {
+            // Remove active class from all
+            tabs.forEach((t) =>
+              t.classList.remove("active", "text-on-surface"),
+            );
+            tabs.forEach((t) => t.classList.add("text-on-surface-variant"));
+
+            // Add active class to clicked
+            tab.classList.add("active", "text-on-surface");
+            tab.classList.remove("text-on-surface-variant");
+
+            // Show corresponding form
+            if (tab.dataset.tab === "student") {
+              studentForm.classList.remove("hidden");
+              studentForm.classList.add("block");
+              adminForm.classList.add("hidden");
+              adminForm.classList.remove("block");
+            } else {
+              adminForm.classList.remove("hidden");
+              adminForm.classList.add("block");
+              studentForm.classList.add("hidden");
+              studentForm.classList.remove("block");
+            }
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

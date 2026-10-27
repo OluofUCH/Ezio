@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  // "local-server" is excluded because it is a separate compilation unit with its own
+  // tsconfig.json, "@local/*" paths and package.json. Left in, the "**/*.ts" include above
+  // drags its sources into the cloud project, where "express" and every "@local/*" import
+  // is unresolvable — which fails `next build` at type-check even though the app compiles.
+  // Type-check that project from its own directory.
+  "exclude": ["node_modules", "scripts/**/*.mjs", "local-server"]
+}

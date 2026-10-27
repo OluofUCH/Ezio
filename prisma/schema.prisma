@@ -1,0 +1,336 @@
+// ============================================================
+// CBT SYSTEM — MULTI-TENANT SCHEMA WITH ONLINE/OFFLINE (LAN) SYNC
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Supabase's transaction pooler (port 6543) cannot run DDL, so Prisma Migrate
+  // needs the direct connection (port 5432). The app itself still uses `url`.
+  // For a plain local Postgres, point both at the same database.
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------------
+// CLASS LEVELS (fixed — Nigerian JSS/SSS system)
+// ------------------------------------------------------------
+
+enum ClassLevel {
+  JSS1
+  JSS2
+  JSS3
+  SS1
+  SS2
+  SS3
+}
+
+// ------------------------------------------------------------
+// TENANCY
+// ------------------------------------------------------------
+
+model School {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique // used as subdomain/identifier, also as tenant key on local servers
+  address   String?
+  logoUrl   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users        User[]
+  exams        Exam[]
+  students     Student[]
+  localServers LocalServer[]
+
+  @@index([slug])
+}
+
+// A physical/virtual LAN server deployed at a school for offline exam sessions.
+// Tracks sync state so the cloud knows what's been reconciled.
+model LocalServer {
+  id           String    @id @default(cuid())
+  schoolId     String
+  name         String // e.g. "Exam Hall A - Server"
+  // SHA-256 of the issued device key, never the key itself. The plaintext is
+  // returned once at provisioning/rotation and cannot be recovered afterwards.
+  //
+  // A plain digest rather than bcrypt on purpose: this is a 32-byte CSPRNG value,
+  // not a human password, so there is no dictionary to slow down — and the sync
+  // endpoints must look a device up *by* the key it presents, which a per-row salt
+  // would make impossible. See lib/auth/device-key.ts.
+  // Null until a hall is paired. A setup code is exchanged for a key at claim time,
+  // so a hall can be created and a code printed before any machine exists.
+  deviceKey    String?   @unique
+  // First few characters of the plaintext, stored for display only, so an admin can
+  // tell which physical machine holds which key without being able to reconstruct it.
+  deviceKeyPrefix String  @default("")
+  // Short-lived, single-use pairing secret. Only its SHA-256 digest is stored.
+  setupCodeHash    String?   @unique
+  setupCodeExpiresAt DateTime?
+  setupCodeUsedAt  DateTime?
+  pairedAt         DateTime?
+  appVersion       String?
+  lastSyncedAt DateTime?
+  lastSeenIp   String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+
+  school       School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  examSessions ExamSession[]
+
+  @@index([schoolId])
+}
+
+// ------------------------------------------------------------
+// SECURITY BOOKKEEPING
+// ------------------------------------------------------------
+
+// Failed-attempt windows for staff login, student login and device pairing.
+// Keyed by (scope, key) so an account-targeted attack is slowed even when the
+// caller rotates IP addresses; a separate IP-keyed row catches spraying.
+model AuthThrottle {
+  id              String   @id @default(cuid())
+  scope           String
+  key             String
+  failures        Int      @default(0)
+  windowStartedAt DateTime @default(now())
+  resetAt         DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([scope, key])
+  @@index([resetAt])
+}
+
+// Append-only trail for credential and provisioning events. Deliberately not a
+// relational child of School/User: deleting a tenant must not erase the record
+// that a pairing or login happened.
+model AuditLog {
+  id          String   @id @default(cuid())
+  schoolId    String?
+  actorUserId String?
+  actorType   String // STAFF | STUDENT | DEVICE | SYSTEM
+  action      String
+  targetType  String?
+  targetId    String?
+  ip          String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+  @@index([action, createdAt])
+}
+
+// ------------------------------------------------------------
+// USERS & ROLES
+// ------------------------------------------------------------
+
+// User is for ADMIN/TEACHER portal access only (email + password).
+// Students never use this model — they authenticate via Student.regNumber + Student.pin,
+// for both online and offline exam sessions. See Student model below.
+enum UserRole {
+  SUPER_ADMIN // platform-level (you)
+  SCHOOL_ADMIN
+  TEACHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  schoolId     String? // null for SUPER_ADMIN
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  school       School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  examsCreated Exam[]   @relation("ExamCreatedBy")
+
+  @@index([schoolId])
+  @@index([email])
+}
+
+// Students authenticate with regNumber + pin — the SAME credentials are used for
+// online exams (hitting the cloud API directly) and offline exams (validated locally
+// against data cached on a LocalServer). This is the unified "exam login," deliberately
+// kept separate from the admin/teacher User model:
+//   - no password management burden for students/schools
+//   - works identically whether or not the device has internet
+//   - safe to cache on a LocalServer without exposing real account credentials
+model Student {
+  id           String   @id @default(cuid())
+  schoolId     String
+  regNumber    String // school-issued registration/admission number — login identifier
+  pin          String // required: the exam-login credential, online AND offline
+  fullName     String
+  classLevel   ClassLevel // required — determines which exams this student can see/take.
+  createdAt    DateTime @default(now())
+
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  examSessions ExamSession[]
+
+  @@unique([schoolId, regNumber])
+  @@index([schoolId])
+  @@index([schoolId, classLevel])
+}
+
+// ------------------------------------------------------------
+// EXAM STRUCTURE
+// ------------------------------------------------------------
+
+enum ExamMode {
+  ONLINE
+  OFFLINE_LAN
+  HYBRID // allow either, decided at session time
+}
+
+model Exam {
+  id             String   @id @default(cuid())
+  schoolId       String
+  title          String
+  subject        String
+  classLevel     ClassLevel // required — students only see/take exams matching their own classLevel.
+  durationMins   Int
+  mode           ExamMode @default(HYBRID)
+  shuffleQuestions Boolean @default(true)
+  shuffleOptions   Boolean @default(true)
+  maxAttempts    Int      @default(1)
+  startWindow    DateTime? // exam only accessible after this
+  endWindow      DateTime? // and before this
+  isPublished    Boolean  @default(false)
+  createdById    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation("ExamCreatedBy", fields: [createdById], references: [id])
+  questions    Question[]
+  examSessions ExamSession[]
+
+  @@index([schoolId])
+  @@index([schoolId, classLevel])
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  examId       String
+  text         String
+  type         QuestionType @default(SINGLE_CHOICE)
+  imageUrl     String? // reserved for future use — v1 bulk uploader and UI are text-only, this field is unused for now
+  points       Int          @default(1)
+  orderIndex   Int // fallback display order if shuffle is off
+  createdAt    DateTime     @default(now())
+
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  options Option[]
+  answers Answer[]
+
+  @@index([examId])
+}
+
+model Option {
+  id         String  @id @default(cuid())
+  questionId String
+  text       String
+  isCorrect  Boolean @default(false)
+  orderIndex Int
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  Answer[] @relation("SelectedOption")
+
+  @@index([questionId])
+}
+
+// ------------------------------------------------------------
+// EXAM TAKING + OFFLINE SYNC
+// ------------------------------------------------------------
+
+enum SessionStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED // time expired
+  FLAGGED // security event during session
+}
+
+// The core sync unit. Created either directly in the cloud (online mode)
+// or on a LocalServer (offline mode) and reconciled later.
+model ExamSession {
+  id            String        @id @default(cuid())
+  localId       String? // ID generated on the LocalServer before sync (offline mode)
+  examId        String
+  studentId     String
+  localServerId String? // null if taken fully online
+  status        SessionStatus @default(IN_PROGRESS)
+  startedAt     DateTime      @default(now())
+  submittedAt   DateTime?
+  score         Float?
+  // Total points available at the moment this session was graded. Snapshotted so
+  // score/maxScore stays a meaningful percentage even if the exam's questions are
+  // later edited — without it, a past score is only interpretable against the
+  // current question set.
+  maxScore      Float?
+  securityFlags Json? // e.g. [{ type: "TAB_BLUR", at: "..." }, ...]
+
+  // Sync bookkeeping — critical for offline reconciliation
+  syncedAt      DateTime? // null = not yet synced to cloud
+  syncVersion   Int       @default(1) // bump on conflicting local edits, for conflict resolution
+
+  exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  localServer LocalServer? @relation(fields: [localServerId], references: [id])
+  answers     Answer[]
+
+  // A student can only have one active/local session per exam per server context,
+  // but localId+localServerId must be unique to prevent double-sync creating duplicates.
+  //
+  // NOTE: this constraint does NOT cover online sessions — both columns are NULL
+  // there, and Postgres treats NULLs as distinct in a unique index. The partial
+  // unique index that actually prevents duplicate *online* sessions is declared
+  // by hand in the init migration:
+  //   CREATE UNIQUE INDEX "ExamSession_one_active_per_student_exam"
+  //     ON "ExamSession" ("examId", "studentId") WHERE "status" = 'IN_PROGRESS';
+  // Prisma cannot express a partial index, so it lives in migration SQL only.
+  @@unique([localServerId, localId])
+  @@index([examId])
+  @@index([studentId])
+  // Attempt-limit counting queries (examId + studentId); without this pair the
+  // planner falls back to the broad studentId index.
+  @@index([examId, studentId])
+  @@index([syncedAt])
+}
+
+model Answer {
+  id               String   @id @default(cuid())
+  examSessionId    String
+  questionId       String
+  selectedOptionId String? // for single choice
+  selectedOptionIds Json?  // for multiple choice, array of Option ids
+  answeredAt       DateTime @default(now())
+
+  // Grading snapshot, written once when the session is submitted. Kept on the
+  // answer rather than recomputed from Option.isCorrect so that correcting a
+  // miskeyed question later cannot silently rewrite already-graded history.
+  // Null while the session is still IN_PROGRESS.
+  isCorrect     Boolean?
+  pointsAwarded Float?
+
+  examSession    ExamSession @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  question       Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOption Option?     @relation("SelectedOption", fields: [selectedOptionId], references: [id])
+
+  @@unique([examSessionId, questionId])
+  @@index([examSessionId])
+}

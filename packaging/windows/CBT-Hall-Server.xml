@@ -1,0 +1,26 @@
+﻿<service>
+  <id>CBT-Hall-Server</id>
+  <name>CBT Hall Server</name>
+  <description>Runs the offline exam hall server on this computer and serves the student exam portal on the school network.</description>
+
+  <executable>%BASE%\node\node.exe</executable>
+  <arguments>dist\server\server.mjs</arguments>
+  <workingdirectory>%BASE%\app</workingdirectory>
+
+  <env name="NODE_ENV" value="production" />
+  <env name="PORT" value="4000" />
+  <env name="CBT_DATA_DIR" value="C:\ProgramData\CBT" />
+  <env name="STUDENT_SESSION_HOURS" value="6" />
+
+  <startmode>Automatic</startmode>
+  <delayedAutoStart>true</delayedAutoStart>
+  <stoptimeout>20 sec</stoptimeout>
+  <onfailure action="restart" delay="10 sec" />
+  <onfailure action="restart" delay="30 sec" />
+
+  <logpath>C:\ProgramData\CBT\logs</logpath>
+  <logmode>roll-by-size</logmode>
+  <log size="10MB" keepFiles="10" />
+</service>
+
+
