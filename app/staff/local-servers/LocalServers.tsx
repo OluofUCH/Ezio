@@ -21,12 +21,25 @@ import type {
 /** A device seen within a day is treated as healthy; beyond that, worth a look. */
 const RECENT_MS = 24 * 60 * 60 * 1000
 
+const HALL_SERVER_DOWNLOAD_URL =
+  process.env.NEXT_PUBLIC_HALL_SERVER_DOWNLOAD_URL?.trim() ||
+  'https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.0.exe'
+
+const HALL_SERVER_GUIDE_URL =
+  process.env.NEXT_PUBLIC_HALL_SERVER_GUIDE_URL?.trim() ||
+  'https://github.com/OluofUCH/Ezio/blob/main/packaging/windows/README.md'
+
+const HALL_SERVER_CHECKSUM_URL =
+  process.env.NEXT_PUBLIC_HALL_SERVER_CHECKSUM_URL?.trim() ||
+  'https://github.com/OluofUCH/Ezio/releases/latest/download/SHA256SUMS.txt'
+
 type SetupState = {
   serverId: string
   name: string
   code: string
   expiresAt: string
   warning: string
+  cloudAddress: string
 }
 
 export function LocalServers() {
@@ -90,6 +103,7 @@ function LocalServersBody() {
         code: result.setupCode.value,
         expiresAt: result.setupCode.expiresAt,
         warning: result.setupCode.warning,
+        cloudAddress: window.location.origin,
       })
     } catch (err) {
       setActionError(errorMessage(err))
@@ -124,6 +138,7 @@ function LocalServersBody() {
         code: result.setupCode.value,
         expiresAt: result.setupCode.expiresAt,
         warning: result.setupCode.warning,
+        cloudAddress: setup.cloudAddress,
       })
     } catch (err) {
       setActionError(errorMessage(err))
@@ -320,6 +335,7 @@ function LocalServersBody() {
             code: created.setupCode.value,
             expiresAt: created.setupCode.expiresAt,
             warning: created.setupCode.warning,
+            cloudAddress: window.location.origin,
           })
           refetch()
         }}
@@ -448,13 +464,83 @@ function SetupCodeModal({
             Copy code
           </button>
 
+          <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
+            <p className="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+              Cloud address for the hall PC
+            </p>
+            <code className="mt-1 block break-all font-mono text-sm text-on-surface">
+              {setup.cloudAddress}
+            </code>
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(setup.cloudAddress)}
+              className="btn-secondary mt-3 w-full"
+            >
+              <Icon name="content_copy" size={18} />
+              Copy cloud address
+            </button>
+          </div>
+
           <Alert tone="info">{setup.warning}</Alert>
 
-          <ol className="space-y-2 font-body-md text-body-md text-on-surface-variant">
-            <li>1. Install CBT Hall Server on the exam-hall PC.</li>
-            <li>2. Open http://localhost:4000/setup.</li>
-            <li>3. Enter the code above and follow the wizard.</li>
-            <li>4. Download the exam while the PC still has internet.</li>
+          <div className="rounded-xl border border-outline-variant bg-surface-container-low p-4">
+            <p className="font-label-md text-label-md text-on-surface">Need the hall server software?</p>
+            <p className="mt-1 font-body-md text-body-md text-on-surface-variant">
+              Download the Windows installer for the exam-hall PC. It is about 45 MB and supports
+              Windows 10/11 (64-bit).
+            </p>
+            <a
+              href={HALL_SERVER_DOWNLOAD_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-primary mt-3 w-full"
+            >
+              <Icon name="download" size={18} />
+              Download Windows installer
+            </a>
+            <a
+              href={HALL_SERVER_GUIDE_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="btn-secondary mt-2 w-full"
+            >
+              <Icon name="menu_book" size={18} />
+              Open install guide
+            </a>
+            <a
+              href={HALL_SERVER_CHECKSUM_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex items-center justify-center gap-1 font-label-sm text-label-sm text-primary underline underline-offset-2"
+            >
+              View the SHA-256 checksum
+              <Icon name="open_in_new" size={14} />
+            </a>
+          </div>
+
+          <ol className="space-y-3 font-body-md text-body-md text-on-surface-variant">
+            <li>
+              <span className="font-semibold text-on-surface">1. Download and install.</span> On the
+              exam-hall PC, run the installer as administrator. If Windows SmartScreen warns, verify
+              the checksum, then select More info and Run anyway.
+            </li>
+            <li>
+              <span className="font-semibold text-on-surface">2. Open the setup page.</span> The
+              installer can open http://localhost:4000/setup for you. Otherwise open it in a browser
+              on the same PC.
+            </li>
+            <li>
+              <span className="font-semibold text-on-surface">3. Pair the hall.</span> Enter the code
+              and cloud address shown above, then set the invigilator PIN.
+            </li>
+            <li>
+              <span className="font-semibold text-on-surface">4. Download the exams.</span> Keep
+              internet connected, select the published exams in the setup wizard, and download them.
+            </li>
+            <li>
+              <span className="font-semibold text-on-surface">5. Go offline.</span> Disconnect
+              internet before students log in, then share the LAN address shown in the hall server.
+            </li>
           </ol>
 
           <div className="flex flex-col gap-3 sm:flex-row">

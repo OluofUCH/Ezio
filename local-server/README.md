@@ -31,9 +31,11 @@ See [`../packaging/windows/README.md`](../packaging/windows/README.md) for the i
 
 1. On the school dashboard, open **Local servers** and create the hall.
 2. Copy the one-time setup code (valid 30 minutes, single use).
-3. Install `CBT-Hall-Server-Setup-*.exe` on the hall PC. The service starts automatically.
+3. Use **Download Windows installer** in the pairing dialog, then install
+   `CBT-Hall-Server-Setup-*.exe` on the hall PC. The service starts automatically.
 4. Open `http://localhost:4000/setup`.
-5. Paste the setup code, claim the hall, and choose a 6â€“8 digit invigilator PIN.
+5. Paste the setup code and cloud address shown in the dashboard, claim the hall, and
+   choose a 6â€“8 digit invigilator PIN.
 6. Download the published `OFFLINE_LAN` or `HYBRID` paper(s) while the PC has internet.
 7. Give students the LAN address shown by the wizard, e.g. `http://192.168.1.20:4000`.
 8. After the exam, open `http://localhost:4000/admin`, sign in, and press **Upload results**.

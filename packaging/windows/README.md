@@ -2,7 +2,28 @@
 
 This folder builds the self-service hall server for a school-owned Windows PC. The
 installer is intentionally **unsigned** for the pilot. It is suitable for controlled
-schools that can verify the checksum, not for anonymous public download.
+schools that can verify the checksum. Sign it before broad production distribution.
+
+## Download (schools)
+
+School staff should download the installer from the dashboard's **Local servers** page, or
+directly from:
+
+- <https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.0.exe>
+- <https://github.com/OluofUCH/Ezio/releases/latest/download/SHA256SUMS.txt>
+
+The dashboard button and this URL expect a published GitHub Release tagged `v0.1.0` with
+those two asset names. If the asset name changes, set
+`NEXT_PUBLIC_HALL_SERVER_DOWNLOAD_URL` and `NEXT_PUBLIC_HALL_SERVER_CHECKSUM_URL` in the
+cloud deployment or update the defaults in `app/staff/local-servers/LocalServers.tsx`.
+
+### Maintainers: publish the release
+
+1. Run the build (below) and confirm the hash in `dist\installer\SHA256SUMS.txt` matches
+   the `.exe`.
+2. On GitHub, open **Releases** → **Draft a new release**.
+3. Create tag `v0.1.0` (or the new version) and upload both files from `dist\installer\`.
+4. Publish. The `releases/latest/download/<asset>` URLs then resolve automatically.
 
 ## What the installer does
 
@@ -59,8 +80,8 @@ iscc.exe packaging\windows\cbt-hall-server.iss
    binary is unsigned. Confirm the publisher is the expected file/hash before choosing
    **More info â†’ Run anyway**. Never install a file whose hash does not match.
 4. The setup wizard opens at `http://localhost:4000/setup`.
-5. On the school dashboard, create the hall under **Local servers**, copy its one-time
-   code, and enter it in the wizard.
+5. On the school dashboard, create the hall under **Local servers**, then enter the
+   one-time code and cloud address shown there in the wizard.
 6. Set the invigilator PIN.
 7. Download the published LAN/HYBRID paper(s) while the PC has internet.
 8. Give students the address shown by the wizard, e.g. `http://192.168.1.20:4000`.

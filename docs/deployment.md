@@ -44,6 +44,9 @@ provider for production.
 | `MAX_IMPORT_ROWS` | No | Maximum rows per bulk import, default 500. |
 | `TRUST_PROXY` | Production behind a proxy | Set to `1` on Vercel or any reverse proxy so login throttling uses the real client IP. |
 | `CRON_SECRET` | Yes for cron | Bearer secret required by `GET /api/maintenance`. |
+| `NEXT_PUBLIC_HALL_SERVER_DOWNLOAD_URL` | No | Public URL of the Windows hall-server installer. Defaults to the latest GitHub release asset. |
+| `NEXT_PUBLIC_HALL_SERVER_GUIDE_URL` | No | Public URL of the hall-server install guide. Defaults to `packaging/windows/README.md` on GitHub. |
+| `NEXT_PUBLIC_HALL_SERVER_CHECKSUM_URL` | No | Public URL of the installer's SHA-256 checksum file. Defaults to the latest GitHub release asset. |
 | `SEED_SUPER_ADMIN_EMAIL` | Seed only | Bootstrap super-admin email. |
 | `SEED_SUPER_ADMIN_PASSWORD` | Production seed | Must be unique, at least 12 characters, and not the sample value. |
 | `SEED_DEMO_PASSWORD` | Dev seed only | Password for the demo school accounts. Never set in production. |
@@ -100,6 +103,20 @@ npm start
 The production build performs `prisma generate` and `next build`. The app requires the
 Node.js runtime (not the Edge runtime) for Prisma, bcrypt and SheetJS.
 
+### Publish the hall-server installer
+
+The cloud app cannot host or run the Windows hall server. Before deploying, attach the
+installer to a GitHub Release so the **Download Windows installer** button in
+**Local servers** resolves:
+
+1. Create a release tagged `v0.1.0`.
+2. Upload `dist/installer/CBT-Hall-Server-Setup-0.1.0.exe` and
+   `dist/installer/SHA256SUMS.txt` as release assets.
+3. Publish the release. The default download URL is
+   `https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.0.exe`.
+4. If you use different asset names, a mirror, or a fork, set the three public hall-server
+   URL variables from section 2.
+
 ### Vercel
 
 1. Import the repository and set the environment variables from section 2.
@@ -123,8 +140,9 @@ access to Supabase; no inbound access is needed beyond HTTPS.
 2. Sign in as the super admin and change the password.
 3. Create the school and its school admin.
 4. Confirm the school admin can sign in and sees only that school.
-5. Provision a hall from **Local servers**, copy the one-time setup code, and pair the
-   hall machine at `http://localhost:4000/setup`.
+5. Provision a hall from **Local servers** and confirm the **Download Windows installer**
+   button opens the release asset. Copy the one-time setup code and pair the hall machine
+   at `http://localhost:4000/setup`.
 6. Publish an `OFFLINE_LAN` or `HYBRID` exam and pull it onto the hall machine while it
    has internet.
 7. Run an end-to-end test sitting, push the result, and confirm it appears in the

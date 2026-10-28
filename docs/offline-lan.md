@@ -20,39 +20,48 @@ pull the exam onto it            on the hall LAN               results appear in
 
 ## 1. Provision the hall server (once per machine)
 
-A **School Admin** creates the device record and receives its key.
+A **School Admin** opens **Local servers**, selects **Create hall**, and names the hall. The
+pairing dialog then shows:
 
-```bash
-curl -s -b jar.txt -X POST http://localhost:3000/api/local-servers \
-  -H 'content-type: application/json' \
-  -d '{"name":"Exam Hall A"}'
-```
+- a one-time setup code, valid for 30 minutes
+- the cloud address to enter on the hall PC
+- the Windows installer and checksum downloads
 
-The response carries the plaintext key **once**:
+The hall app exchanges the setup code for its long-lived device key automatically. The key
+is stored on the hall PC and only its SHA-256 digest is stored in the cloud. If the code
+expires, select **Pair hall** on the hall card to generate another one.
 
-```json
-{ "localServer": { "id": "clx...", "name": "Exam Hall A" },
-  "deviceKey": { "value": "cbt_dev_7Kq2...", "warning": "Copy this now — ..." } }
-```
-
-Only a SHA-256 digest is stored, so the key cannot be re-read later. If it is lost:
-
-```bash
-curl -s -b jar.txt -X POST http://localhost:3000/api/local-servers/<id>/rotate-key
-```
-
-Rotation is immediate — the old key stops working at once. **Push any pending results
-before rotating**, or the device will not be able to upload them until it is reconfigured.
-
-To revoke a lost or retired machine without rotating, deactivate it. It stops syncing on its
-next request:
-
-```bash
-curl -s -b jar.txt -X PATCH http://localhost:3000/api/local-servers/<id> \
-  -H 'content-type: application/json' -d '{"isActive":false}'
-```
+Before rotating a paired hall's device key, upload any pending results. Rotation invalidates
+the old key immediately, so the machine cannot upload again until it is reconfigured. Disable
+a lost or retired hall from the same page to stop it syncing on its next request.
 
 ## 2. Set up the hall machine (once)
+
+### School PC: install the Windows package
+
+The supported school installation is the packaged build published as a GitHub Release asset.
+Open **Local servers** in the dashboard, provision the hall, then use **Download Windows
+installer**. The current release is:
+
+- Installer: `CBT-Hall-Server-Setup-0.1.0.exe` (about 45 MB, Windows 10/11 64-bit)
+- Checksums: `SHA256SUMS.txt` in the same release
+
+1. Download both files to the exam-hall PC.
+2. Verify the installer hash (optional but recommended):
+   `Get-FileHash .\CBT-Hall-Server-Setup-0.1.0.exe -Algorithm SHA256`
+3. Run the installer **as administrator**. The build is not code-signed yet, so Windows
+   SmartScreen may warn; verify the hash, then choose **More info** → **Run anyway**.
+4. The installer starts the hall server and opens `http://localhost:4000/setup`.
+5. Enter the one-time setup code and cloud address shown in **Local servers**, then set
+   the invigilator PIN.
+6. Keep internet connected, select the published exams in the setup wizard, and download
+   them before disconnecting.
+
+If the setup page does not open, start **CBT Hall Server** from the Start menu or run
+`http://localhost:4000/setup` manually. The server listens on the school LAN only; do not
+port-forward it or expose it to the internet.
+
+### Developer/non-Windows: run from source
 
 ```bash
 cd local-server
@@ -74,6 +83,13 @@ The exam must be **published** and its mode must be `OFFLINE_LAN` or `HYBRID`. A
 exam is refused — staging copies its answer key onto a hall machine, which shouldn't happen
 for a paper nobody asked to run offline.
 
+With the Windows installer, the setup wizard lists available exams immediately after pairing.
+Select the papers and press **Download selected exams**. To download or refresh a paper later,
+open `http://localhost:4000/admin`, sign in with the invigilator PIN, and use the exam papers
+section.
+
+When running from source, use:
+
 ```bash
 npm run pull -- --exam=<examId>
 ```
@@ -89,6 +105,10 @@ Re-running `pull` picks up a corrected paper, but it **refuses** to run while un
 results are on the machine — re-staging could invalidate them. Push first.
 
 ## 4. Exam day (no internet needed)
+
+The Windows service starts automatically when the hall PC boots. Open
+`http://localhost:4000/admin` on that PC to see the student LAN address and server status.
+When running from source, start it with:
 
 ```bash
 npm run serve
@@ -118,10 +138,15 @@ Check the hall server is reachable from a student device:
 http://<lan-ip>:4000/api/health
 ```
 
-**Note:** the student-facing browser UI is not part of this milestone — the endpoints above
-are the API a client calls. See "Not included" below.
+The student-facing exam app is served at the LAN address. Students do not install any software.
 
 ## 5. Push the results (when internet returns)
+
+Reconnect the hall PC, open `http://localhost:4000/admin`, sign in with the invigilator PIN,
+and select **Upload results**. Confirm that no sittings are awaiting upload before wiping,
+reimaging, or retiring the PC.
+
+When running from source, use:
 
 ```bash
 npm run push
@@ -207,11 +232,10 @@ npm run status         # should report everything synced
 including that a device-claimed score is ignored and that a repeated push creates no
 duplicate.
 
-## Not included in this milestone
+## Current limits
 
-- **The student-facing browser UI.** The LAN API is complete; rendering it is not built.
-- **Automatic background sync.** PRD §6 leaves the trigger open; `push` is a manual command.
-  The endpoint is idempotent and resumable, so scheduling it later needs no server change.
+- **Background upload is optional.** The invigilator can enable auto-upload in the admin
+  console; otherwise results remain on the hall PC until **Upload results** is selected.
 - **Multi-hall coordination.** Each device is independent. Two halls can run the same exam;
   their results reconcile separately and correctly.
 

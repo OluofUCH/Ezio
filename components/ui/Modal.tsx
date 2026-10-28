@@ -72,7 +72,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="w-full max-w-md animate-fade-in rounded-2xl bg-surface-container-lowest p-8 shadow-2xl outline-none"
+        className="max-h-[calc(100dvh-2rem)] w-full max-w-md animate-fade-in overflow-y-auto rounded-2xl bg-surface-container-lowest p-8 shadow-2xl outline-none"
         onClick={(event) => event.stopPropagation()}
       >
         {icon ? (
