@@ -109,11 +109,11 @@ The cloud app cannot host or run the Windows hall server. Before deploying, atta
 installer to a GitHub Release so the **Download Windows installer** button in
 **Local servers** resolves:
 
-1. Create a release tagged `v0.1.0`.
-2. Upload `dist/installer/CBT-Hall-Server-Setup-0.1.0.exe` and
+1. Create a release tagged `v0.1.1`.
+2. Upload `dist/installer/CBT-Hall-Server-Setup-0.1.1.exe` and
    `dist/installer/SHA256SUMS.txt` as release assets.
 3. Publish the release. The default download URL is
-   `https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.0.exe`.
+   `https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.1.exe`.
 4. If you use different asset names, a mirror, or a fork, set the three public hall-server
    URL variables from section 2.
 

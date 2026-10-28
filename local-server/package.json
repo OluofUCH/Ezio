@@ -1,6 +1,6 @@
 {
   "name": "cbt-local-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Offline/LAN exam server for the CBT platform — runs in an exam hall, syncs to the cloud",
   "type": "module",

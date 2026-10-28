@@ -10,7 +10,7 @@
 ; The staging folder is produced by build.ps1. Do not run iscc without it.
 
 #define AppName "CBT Hall Server"
-#define AppVersion "0.1.0"
+#define AppVersion "0.1.1"
 #define AppPublisher "CBT Platform"
 #define ServiceExe "CBT-Hall-Server.exe"
 #define ServiceId "CBT-Hall-Server"
@@ -40,6 +40,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 Source: "stage\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "open-setup.ps1"; DestDir: "{app}\tools"; Flags: ignoreversion
 ; The database template is generated once at build time and never overwritten on upgrade.
 Source: "stage\seed\exam-hall.db"; DestDir: "{commonappdata}\CBT"; DestName: "exam-hall.db"; Flags: onlyifdoesntexist uninsneveruninstall
 
@@ -59,7 +60,7 @@ Name: "{commondesktop}\CBT Hall Server Setup"; Filename: "http://localhost:4000/
 Filename: "{app}\winsw\{#ServiceExe}"; Parameters: "install"; Flags: runhidden waituntilterminated
 Filename: "{app}\winsw\{#ServiceExe}"; Parameters: "start"; Flags: runhidden waituntilterminated
 Filename: "netsh.exe"; Parameters: "advfirewall firewall add rule name=""CBT Hall Server"" dir=in action=allow protocol=TCP localport=4000 profile=private"; Flags: runhidden waituntilterminated
-Filename: "http://localhost:4000/setup"; Description: "Open the setup wizard"; Flags: shellexec nowait postinstall skipifsilent
+Filename: "{sys}\WindowsPowerShell\v1.0\powershell.exe"; Parameters: "-NoProfile -NonInteractive -WindowStyle Hidden -ExecutionPolicy Bypass -File ""{app}\tools\open-setup.ps1"""; Description: "Open the setup wizard"; Flags: runhidden waituntilterminated postinstall skipifsilent
 
 [UninstallRun]
 Filename: "{app}\winsw\{#ServiceExe}"; Parameters: "stop"; Flags: runhidden waituntilterminated; RunOnceId: "StopCbtHall"
@@ -70,4 +71,27 @@ Filename: "netsh.exe"; Parameters: "advfirewall firewall delete rule name=""CBT 
 function InitializeSetup(): Boolean;
 begin
   Result := True;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ExistingService: String;
+  ResultCode: Integer;
+begin
+  Result := '';
+  ExistingService := ExpandConstant('{app}\winsw\{#ServiceExe}');
+
+  { Upgrades must remove the old service before its wrapper and XML are replaced. }
+  if FileExists(ExistingService) then
+  begin
+    Exec(ExistingService, 'stopwait', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Exec(ExistingService, 'uninstall', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  end;
+
+  { Avoid accumulating duplicate firewall rules across upgrades. }
+  Exec(
+    ExpandConstant('{sys}\netsh.exe'),
+    'advfirewall firewall delete rule name="CBT Hall Server"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode
+  );
 end;

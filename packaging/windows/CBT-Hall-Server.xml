@@ -3,9 +3,9 @@
   <name>CBT Hall Server</name>
   <description>Runs the offline exam hall server on this computer and serves the student exam portal on the school network.</description>
 
-  <executable>%BASE%\node\node.exe</executable>
+  <executable>%BASE%\..\node\node.exe</executable>
   <arguments>dist\server\server.mjs</arguments>
-  <workingdirectory>%BASE%\app</workingdirectory>
+  <workingdirectory>%BASE%\..\app</workingdirectory>
 
   <env name="NODE_ENV" value="production" />
   <env name="PORT" value="4000" />

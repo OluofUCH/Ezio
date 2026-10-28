@@ -23,10 +23,11 @@ $ErrorActionPreference = 'Stop'
 $windowsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $windowsDir '..\..')
 $localServer = Join-Path $repoRoot 'local-server'
+$appVersion = (Get-Content -LiteralPath (Join-Path $localServer 'package.json') -Raw | ConvertFrom-Json).version
 $stage = Join-Path $windowsDir 'stage'
 $cache = Join-Path $windowsDir 'cache'
 
-Write-Host "Building CBT Hall Server $NodeVersion / WinSW $WinSwVersion" -ForegroundColor Cyan
+Write-Host "Building CBT Hall Server $appVersion / Node $NodeVersion / WinSW $WinSwVersion" -ForegroundColor Cyan
 Write-Host "Repository: $repoRoot"
 
 if (Test-Path $stage) { Remove-Item -LiteralPath $stage -Recurse -Force }
@@ -155,7 +156,7 @@ if (-not $SkipInstaller) {
     try {
       & $isccPath 'cbt-hall-server.iss'
       if ($LASTEXITCODE -ne 0) { throw 'Inno Setup failed.' }
-      $installer = Join-Path $repoRoot 'dist\installer\CBT-Hall-Server-Setup-0.1.0.exe'
+      $installer = Join-Path $repoRoot "dist\installer\CBT-Hall-Server-Setup-$appVersion.exe"
       if (Test-Path $installer) {
         $hash = Get-FileHash -LiteralPath $installer -Algorithm SHA256
         "$($hash.Hash)  $(Split-Path -Leaf $installer)" | Set-Content -LiteralPath (Join-Path $repoRoot 'dist\installer\SHA256SUMS.txt') -Encoding ASCII

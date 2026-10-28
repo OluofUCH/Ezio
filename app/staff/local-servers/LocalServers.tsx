@@ -23,7 +23,7 @@ const RECENT_MS = 24 * 60 * 60 * 1000
 
 const HALL_SERVER_DOWNLOAD_URL =
   process.env.NEXT_PUBLIC_HALL_SERVER_DOWNLOAD_URL?.trim() ||
-  'https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.0.exe'
+  'https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.1.exe'
 
 const HALL_SERVER_GUIDE_URL =
   process.env.NEXT_PUBLIC_HALL_SERVER_GUIDE_URL?.trim() ||

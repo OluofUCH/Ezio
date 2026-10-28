@@ -41,7 +41,7 @@ export function SetupWizard() {
         <div className="mb-8 flex items-center justify-between gap-4">
           <Brand />
           <span className="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">
-            v{state?.appVersion ?? '0.1.0'}
+            v{state?.appVersion ?? '0.1.1'}
           </span>
         </div>
 

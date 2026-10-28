@@ -43,12 +43,12 @@ The supported school installation is the packaged build published as a GitHub Re
 Open **Local servers** in the dashboard, provision the hall, then use **Download Windows
 installer**. The current release is:
 
-- Installer: `CBT-Hall-Server-Setup-0.1.0.exe` (about 45 MB, Windows 10/11 64-bit)
+- Installer: `CBT-Hall-Server-Setup-0.1.1.exe` (about 45 MB, Windows 10/11 64-bit)
 - Checksums: `SHA256SUMS.txt` in the same release
 
 1. Download both files to the exam-hall PC.
 2. Verify the installer hash (optional but recommended):
-   `Get-FileHash .\CBT-Hall-Server-Setup-0.1.0.exe -Algorithm SHA256`
+   `Get-FileHash .\CBT-Hall-Server-Setup-0.1.1.exe -Algorithm SHA256`
 3. Run the installer **as administrator**. The build is not code-signed yet, so Windows
    SmartScreen may warn; verify the hash, then choose **More info** → **Run anyway**.
 4. The installer starts the hall server and opens `http://localhost:4000/setup`.
