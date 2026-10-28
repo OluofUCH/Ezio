@@ -13,7 +13,7 @@ html {
 body {
   margin: 0;
   font-family: 'Hanken Grotesk', system-ui, sans-serif;
-  background: theme('colors.background');
+  background-color: theme('colors.background');
   color: theme('colors.on-background');
   -webkit-font-smoothing: antialiased;
 }
@@ -40,30 +40,81 @@ body {
 }
 
 @layer components {
+  .glass-panel {
+    background: rgba(255, 255, 255, 1);
+    border-bottom: 1px solid theme('colors.surface-container-highest');
+  }
+
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-container px-6 py-3 font-label-md text-label-md font-bold text-on-surface shadow-sm transition-all hover:bg-primary-fixed hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container disabled:active:scale-100;
   }
+
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface px-4 py-2.5 text-sm font-semibold text-on-surface transition hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-outline-variant bg-surface px-6 py-3 font-label-md text-label-md font-semibold text-on-surface transition-colors hover:bg-surface-variant disabled:cursor-not-allowed disabled:opacity-50;
   }
+
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-error/30 bg-error-container/50 px-4 py-2.5 text-sm font-semibold text-error transition hover:bg-error-container disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-error px-6 py-3 font-label-md text-label-md font-bold uppercase tracking-wider text-on-error shadow-md transition-colors hover:bg-[#a30005] disabled:cursor-not-allowed disabled:opacity-50;
   }
+
   .card {
-    @apply rounded-2xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-level-2;
+    @apply rounded-xl border border-border-subtle bg-surface p-6 shadow-level-1;
   }
+
   .label {
-    @apply text-xs font-semibold uppercase tracking-wider text-on-surface-variant;
+    @apply font-label-md text-label-md text-on-surface-variant;
   }
+
   .input {
-    @apply w-full rounded-lg border border-outline-variant bg-surface px-3.5 py-2.5 text-base text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20;
+    @apply w-full rounded-lg border-2 border-transparent bg-[#F9FAFB] px-4 py-3 font-body-md text-body-md text-on-surface outline-none transition-colors placeholder:text-outline focus:border-primary-container focus:bg-white;
   }
+
   .option-card {
-    @apply flex w-full items-start gap-3 rounded-xl border border-outline-variant bg-surface p-4 text-left transition hover:border-primary/50 hover:bg-surface-container-low;
+    @apply flex w-full cursor-pointer items-start gap-4 rounded-xl border-2 border-outline-variant bg-surface-container-lowest p-5 text-left;
+    transition:
+      transform 200ms ease,
+      box-shadow 200ms ease,
+      background-color 200ms ease,
+      border-color 200ms ease;
   }
+
+  .option-card:hover:not(.option-selected) {
+    transform: translateY(-2px);
+    background-color: theme('colors.surface-container-low');
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.1),
+      0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  }
+
   .option-selected {
-    @apply border-primary bg-primary/5 ring-2 ring-primary/20;
+    border-color: theme('colors.primary-container');
+    background-color: theme('colors.background');
+    box-shadow: 0 0 0 4px rgba(168, 217, 62, 0.1);
   }
+}
+
+.progress-dot-answered {
+  background-color: theme('colors.secondary-container');
+  color: #ffffff;
+  border: none;
+}
+
+.progress-dot-current {
+  border: 2px solid theme('colors.primary-container');
+  background-color: #ffffff;
+  color: theme('colors.on-primary-container');
+}
+
+.progress-dot-flagged {
+  background-color: theme('colors.error');
+  color: #ffffff;
+  border: none;
+}
+
+.progress-dot-unanswered {
+  background-color: theme('colors.surface-container-highest');
+  color: theme('colors.on-surface-variant');
+  border: none;
 }
 
 .tabular {
@@ -72,4 +123,17 @@ body {
 
 .scroll-thin {
   scrollbar-width: thin;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: theme('colors.outline-variant');
+  border-radius: 9999px;
 }

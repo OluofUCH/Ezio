@@ -15,13 +15,13 @@ export function Icon({ name, size, filled, className = '' }: { name: string; siz
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-on-primary shadow-level-1">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-on-surface shadow-sm">
         <Icon name="school" filled size={22} />
       </div>
       {compact ? null : (
-        <div>
-          <p className="text-base font-bold leading-tight text-on-surface">CBT Hall Server</p>
-          <p className="text-xs text-on-surface-variant">Offline exam mode</p>
+        <div className="min-w-0">
+          <p className="font-headline-md text-headline-md font-bold leading-tight text-on-surface">Ezio</p>
+          <p className="font-label-sm text-label-sm text-on-surface-variant">Offline Hall Server</p>
         </div>
       )}
     </div>
@@ -114,7 +114,7 @@ export function StepBadge({ number, active, done }: { number: number; active: bo
   return (
     <span
       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-        done ? 'bg-primary text-on-primary' : active ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant'
+        done ? 'bg-primary-container text-on-surface' : active ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container text-on-surface-variant'
       }`}
     >
       {done ? <Icon name="check" size={18} /> : number}

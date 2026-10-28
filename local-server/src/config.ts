@@ -12,7 +12,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
  * edits a 48-character secret.
  */
 
-export const APP_VERSION = '0.1.1'
+export const APP_VERSION = '0.1.2'
 
 export type HallConfig = {
   version: 1

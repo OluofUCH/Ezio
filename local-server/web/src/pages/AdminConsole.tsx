@@ -67,7 +67,7 @@ export function AdminConsole() {
         <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <Brand />
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-container/25 px-3 py-1 font-label-sm text-label-sm text-on-primary-container">
               <Icon name="wifi" size={14} /> Hall ready
             </span>
             <button

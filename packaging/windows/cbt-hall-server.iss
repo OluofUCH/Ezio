@@ -10,7 +10,7 @@
 ; The staging folder is produced by build.ps1. Do not run iscc without it.
 
 #define AppName "CBT Hall Server"
-#define AppVersion "0.1.1"
+#define AppVersion "0.1.2"
 #define AppPublisher "CBT Platform"
 #define ServiceExe "CBT-Hall-Server.exe"
 #define ServiceId "CBT-Hall-Server"

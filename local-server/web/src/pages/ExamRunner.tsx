@@ -293,14 +293,14 @@ export function ExamRunner({ examId, onExit }: { examId: string; onExit: () => v
                     key={item.id}
                     type="button"
                     onClick={() => setIndex(itemIndex)}
-                    className={`flex h-9 items-center justify-center rounded-lg border text-xs font-bold transition ${
+                    className={`flex aspect-square w-full items-center justify-center rounded-full font-label-md text-label-md font-bold transition-all hover:opacity-80 ${
                       itemIndex === index
-                        ? 'border-primary bg-primary text-on-primary'
+                        ? 'progress-dot-current scale-110 ring-4 ring-primary-container/20'
                         : isFlagged
-                          ? 'border-error bg-error-container/50 text-error'
+                          ? 'progress-dot-flagged'
                           : isAnswered
-                            ? 'border-primary/40 bg-primary/10 text-primary'
-                            : 'border-outline-variant bg-surface text-on-surface-variant'
+                            ? 'progress-dot-answered'
+                            : 'progress-dot-unanswered'
                     }`}
                   >
                     {itemIndex + 1}
@@ -343,7 +343,7 @@ function ResultScreen({ result, onExit }: { result: SubmitResult; onExit: () => 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4 py-8">
       <div className="card w-full max-w-md text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary-container/30 text-on-primary-container">
           <Icon name="task_alt" filled size={36} />
         </div>
         <h1 className="mt-4 text-2xl font-bold text-on-surface">Exam submitted</h1>

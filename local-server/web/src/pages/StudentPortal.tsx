@@ -198,7 +198,7 @@ export function StudentPortal() {
 function PageShell({ children, health }: { children: ReactNode; health: HallHealth | null }) {
   return (
     <main className="min-h-screen bg-background px-4 py-6 md:px-8">
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-1.5 bg-primary" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-1.5 bg-primary-container" />
       {children}
       <footer className="mx-auto mt-8 max-w-4xl text-center text-xs text-on-surface-variant">
         {health?.status === 'ready'

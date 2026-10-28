@@ -9,26 +9,27 @@ schools that can verify the checksum. Sign it before broad production distributi
 School staff should download the installer from the dashboard's **Local servers** page, or
 directly from:
 
-- <https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.1.exe>
+- <https://github.com/OluofUCH/Ezio/releases/latest/download/CBT-Hall-Server-Setup-0.1.2.exe>
 - <https://github.com/OluofUCH/Ezio/releases/latest/download/SHA256SUMS.txt>
 
-The dashboard button and this URL expect a published GitHub Release tagged `v0.1.1` with
+The dashboard button and this URL expect a published GitHub Release tagged `v0.1.2` with
 those two asset names. If the asset name changes, set
 `NEXT_PUBLIC_HALL_SERVER_DOWNLOAD_URL` and `NEXT_PUBLIC_HALL_SERVER_CHECKSUM_URL` in the
 cloud deployment or update the defaults in `app/staff/local-servers/LocalServers.tsx`.
 
-### Upgrade from 0.1.0
+### Upgrade from an earlier pilot build
 
 Version `0.1.0` used incorrect WinSW paths and could open the setup page while the service
-was stopped. Install `0.1.1` over it; the installer replaces and restarts the service while
-preserving everything under `C:\ProgramData\CBT`.
+was stopped. Version `0.1.1` started correctly but its production CSS build omitted utility
+classes. Install `0.1.2` over either version; the installer replaces and restarts the service
+while preserving everything under `C:\ProgramData\CBT`.
 
 ### Maintainers: publish the release
 
 1. Run the build (below) and confirm the hash in `dist\installer\SHA256SUMS.txt` matches
    the `.exe`.
 2. On GitHub, open **Releases** → **Draft a new release**.
-3. Create tag `v0.1.1` (or the new version) and upload both files from `dist\installer\`.
+3. Create tag `v0.1.2` (or the new version) and upload both files from `dist\installer\`.
 4. Publish. The `releases/latest/download/<asset>` URLs then resolve automatically.
 
 ## What the installer does
@@ -63,7 +64,7 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\build.ps1
 Outputs:
 
 - `packaging\windows\stage\` â€” staging tree.
-- `dist\installer\CBT-Hall-Server-Setup-0.1.1.exe`
+- `dist\installer\CBT-Hall-Server-Setup-0.1.2.exe`
 - `dist\installer\SHA256SUMS.txt`
 
 If Inno Setup is not installed, run the staging step with `-SkipInstaller`, install
@@ -79,7 +80,7 @@ iscc.exe packaging\windows\cbt-hall-server.iss
 2. Verify the hash in PowerShell:
 
    ```powershell
-   Get-FileHash .\CBT-Hall-Server-Setup-0.1.1.exe -Algorithm SHA256
+   Get-FileHash .\CBT-Hall-Server-Setup-0.1.2.exe -Algorithm SHA256
    ```
 
 3. Run the installer as an administrator. Windows SmartScreen will warn because the

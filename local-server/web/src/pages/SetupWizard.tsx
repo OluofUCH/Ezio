@@ -30,7 +30,7 @@ export function SetupWizard() {
   if (step === 'loading') {
     return (
       <Shell>
-        <Loading message="Checking this hall serverâ€¦" />
+        <Loading message="Checking this hall server…" />
       </Shell>
     )
   }
@@ -41,7 +41,7 @@ export function SetupWizard() {
         <div className="mb-8 flex items-center justify-between gap-4">
           <Brand />
           <span className="rounded-full bg-surface-container px-3 py-1 text-xs font-semibold text-on-surface-variant">
-            v{state?.appVersion ?? '0.1.1'}
+            v{state?.appVersion ?? '0.1.2'}
           </span>
         </div>
 
@@ -104,7 +104,7 @@ export function SetupWizard() {
 function Shell({ children }: { children: ReactNode }) {
   return (
     <main className="min-h-screen bg-background px-4 py-8 md:px-8 md:py-12">
-      <div className="pointer-events-none fixed inset-x-0 top-0 h-1.5 bg-primary" />
+      <div className="pointer-events-none fixed inset-x-0 top-0 h-1.5 bg-primary-container" />
       {children}
       <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-on-surface-variant">
         Setup and admin pages work only on this computer. Student devices use the hall address shown at the end.
@@ -191,13 +191,13 @@ function ClaimStep({
 
         {state?.firewallRulePresent === false ? (
           <Alert tone="warning" title="Windows Firewall may block student devices">
-            The installer normally opens port 4000. If students cannot connect later, allow â€œCBT Hall Serverâ€ through Windows Firewall.
+            The installer normally opens port 4000. If students cannot connect later, allow “CBT Hall Server” through Windows Firewall.
           </Alert>
         ) : null}
 
         <button className="btn-primary w-full py-3" disabled={busy || code.trim().length < 8}>
           {busy ? <Spinner size={18} /> : <Icon name="link" size={20} />}
-          {busy ? 'Pairingâ€¦' : 'Pair this hall'}
+          {busy ? 'Pairing…' : 'Pair this hall'}
         </button>
       </form>
     </section>
@@ -260,7 +260,7 @@ function PinStep({ busy, onSave }: { busy: boolean; onSave: (pin: string) => voi
         </label>
         <button className="btn-primary w-full py-3" disabled={busy || pin.length < 6 || pin !== confirm}>
           {busy ? <Spinner size={18} /> : <Icon name="lock" size={20} />}
-          {busy ? 'Savingâ€¦' : 'Save PIN and continue'}
+          {busy ? 'Saving…' : 'Save PIN and continue'}
         </button>
       </form>
     </section>
@@ -317,11 +317,11 @@ function StageStep({ state, onStaged }: { state: SetupState | null; onStaged: ()
 
       {error ? <Alert tone="danger" title="Could not load exams" onDismiss={() => setError(null)}>{error}</Alert> : null}
       {state?.firewallRulePresent === false ? (
-        <Alert tone="warning" title="Firewall warning">Student devices may not be able to connect. Allow â€œCBT Hall Serverâ€ through Windows Firewall.</Alert>
+        <Alert tone="warning" title="Firewall warning">Student devices may not be able to connect. Allow “CBT Hall Server” through Windows Firewall.</Alert>
       ) : null}
 
       {exams === null ? (
-        <Loading message="Fetching published examsâ€¦" />
+        <Loading message="Fetching published exams…" />
       ) : exams.length === 0 ? (
         <Alert tone="warning" title="No published LAN exams yet">
           Publish an OFFLINE_LAN or HYBRID exam on the school dashboard, then return to this page.
@@ -354,7 +354,7 @@ function StageStep({ state, onStaged }: { state: SetupState | null; onStaged: ()
                     <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant">{exam.classLevel}</span>
                   </span>
                   <span className="mt-1 block text-sm text-on-surface-variant">
-                    {exam.subject} Â· {exam.questionCount} question{exam.questionCount === 1 ? '' : 's'} Â· {exam.durationMins} min
+                    {exam.subject} · {exam.questionCount} question{exam.questionCount === 1 ? '' : 's'} · {exam.durationMins} min
                   </span>
                   {done.includes(exam.id) ? (
                     <span className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-primary">
@@ -370,7 +370,7 @@ function StageStep({ state, onStaged }: { state: SetupState | null; onStaged: ()
 
       <button className="btn-primary mt-5 w-full py-3" onClick={() => void stage()} disabled={busy || selected.size === 0 || exams === null}>
         {busy ? <Spinner size={18} /> : <Icon name="cloud_download" size={20} />}
-        {busy ? `Downloading ${done.length}/${selected.size}â€¦` : `Download ${selected.size} selected exam${selected.size === 1 ? '' : 's'}`}
+        {busy ? `Downloading ${done.length}/${selected.size}…` : `Download ${selected.size} selected exam${selected.size === 1 ? '' : 's'}`}
       </button>
     </section>
   )
@@ -386,7 +386,7 @@ function ReadyStep({ state }: { state: SetupState }) {
         <div>
           <h1 className="text-2xl font-bold text-on-surface">This hall is ready</h1>
           <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">
-            {state.schoolName} Â· {state.localServerName}
+            {state.schoolName} · {state.localServerName}
           </p>
         </div>
       </div>
@@ -399,7 +399,7 @@ function ReadyStep({ state }: { state: SetupState }) {
 
       {state.firewallRulePresent === false ? (
         <Alert tone="warning" title="Windows Firewall may be blocking the hall">
-          Allow â€œCBT Hall Serverâ€ on private networks. Without it, students cannot reach {state.studentUrl}.
+          Allow “CBT Hall Server” on private networks. Without it, students cannot reach {state.studentUrl}.
         </Alert>
       ) : null}
 
