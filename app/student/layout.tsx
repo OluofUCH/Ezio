@@ -7,6 +7,7 @@ const STUDENT_NAV: NavItem[] = [
   { href: '/student', label: 'Dashboard', icon: 'dashboard' },
   { href: '/student/exams', label: 'My Exams', icon: 'quiz' },
   { href: '/student/results', label: 'Results', icon: 'assessment' },
+  { href: '/sms/student', label: 'School records', icon: 'school' },
 ]
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {

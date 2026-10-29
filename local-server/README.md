@@ -67,21 +67,26 @@ manually only after confirming there is nothing left to upload.
 
 ```powershell
 cd local-server
-npm install
+pnpm install --frozen-lockfile --ignore-scripts
 $env:LOCAL_DATABASE_URL='file:C:/path/to/local-server/data/exam-hall.db'
-npm run setup          # prisma generate + apply SQLite migrations
-npm run serve          # http://localhost:4000
-npm run dev:web        # Vite UI at http://localhost:5173, proxying /api
+pnpm run setup          # private SQLite client generation + apply SQLite migrations
+pnpm run serve          # http://localhost:4000
+pnpm run dev:web        # Vite UI at http://localhost:5173, proxying /api
 ```
 
 Build a production bundle:
 
 ```powershell
-npm run build          # dist/web + dist/server/server.mjs
-npm start
+pnpm run build          # dist/web + dist/server/server.mjs
+pnpm start
 ```
 
 ### Why `@/*` points at the cloud repo
+
+The database import `#local-prisma` is different: it resolves to this package's
+private `generated/client`, generated from the SQLite schema. Windows packaging
+copies that directory explicitly, so the cloud client cannot replace it when
+dependencies are installed with pnpm.
 
 `local-server/tsconfig.json` maps `@/*` to `../*`, so this server imports the cloud's exam
 rules by the same specifier the cloud uses: `@/lib/timing`,

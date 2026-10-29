@@ -51,7 +51,7 @@ downloading papers, uploading results, and rotating a key.
 
 Prerequisites:
 
-- Node.js 22 and npm on the build machine.
+- Node.js 22 and the pinned pnpm version on the build machine.
 - [Inno Setup 6](https://jrsoftware.org/isinfo.php) with `iscc.exe` on `PATH`.
 - Internet access to download `node.exe` and WinSW on the first build.
 
@@ -62,6 +62,10 @@ powershell -ExecutionPolicy Bypass -File packaging\windows\build.ps1
 ```
 
 Outputs:
+
+The build generates a private SQLite client in `local-server/generated/client`
+and stages it under `app/generated/client`. Runtime `#local-prisma` resolution
+keeps it independent of the cloud's generated client and pnpm's symlink layout.
 
 - `packaging\windows\stage\` â€” staging tree.
 - `dist\installer\CBT-Hall-Server-Setup-0.1.2.exe`

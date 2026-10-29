@@ -2,6 +2,7 @@ import { created, ok, readJson, readQuery, route } from '@/lib/api'
 import { requireSchoolScope } from '@/lib/auth/session'
 import { pageMeta, paginate } from '@/lib/validation/common'
 import { createExamSchema, listExamsSchema } from '@/lib/validation/exam'
+import { createLegacyExam } from '@/src/modules/school-setup/legacy-exams'
 
 export const runtime = 'nodejs'
 
@@ -55,28 +56,10 @@ export const GET = route(async (req) => {
  * separate endpoint.
  */
 export const POST = route(async (req) => {
-  const { db, session } = await requireSchoolScope(req)
+  const context = await requireSchoolScope(req)
   const input = await readJson(req, createExamSchema)
 
-  const exam = await db.exam.create({
-    data: {
-      title: input.title,
-      subject: input.subject,
-      classLevel: input.classLevel,
-      durationMins: input.durationMins,
-      mode: input.mode,
-      shuffleQuestions: input.shuffleQuestions,
-      shuffleOptions: input.shuffleOptions,
-      maxAttempts: input.maxAttempts,
-      startWindow: input.startWindow ?? null,
-      endWindow: input.endWindow ?? null,
-      // Authorship comes from the session, never the body — otherwise a teacher
-      // could attribute an exam to a colleague. schoolId is injected by the
-      // tenant extension.
-      createdById: session.userId,
-    } as never,
-    select: EXAM_LIST_SELECT,
-  })
+  const exam = await createLegacyExam(context, input, EXAM_LIST_SELECT)
 
   return created({
     exam,

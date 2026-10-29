@@ -31,6 +31,7 @@ function navFor(role: UserRole): NavItem[] {
   return [
     ...shared,
     { href: '/staff/teachers', label: 'Staff', icon: 'school' },
+    { href: '/sms/staff/calendar', label: 'School setup', icon: 'calendar_month' },
     { href: '/staff/local-servers', label: 'Local Servers', icon: 'dns' },
     ...(role === 'SUPER_ADMIN'
       ? [{ href: '/staff/schools', label: 'Schools', icon: 'apartment' }]

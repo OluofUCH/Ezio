@@ -2,8 +2,12 @@
   "name": "cbt-local-server",
   "version": "0.1.2",
   "private": true,
+  "packageManager": "pnpm@11.12.0",
   "description": "Offline/LAN exam server for the CBT platform — runs in an exam hall, syncs to the cloud",
   "type": "module",
+  "imports": {
+    "#local-prisma": "./generated/client/index.js"
+  },
   "scripts": {
     "setup": "prisma generate && tsx src/cli/migrate.ts",
     "migrate": "tsx src/cli/migrate.ts",
@@ -15,7 +19,7 @@
     "dev:web": "vite --config web/vite.config.ts",
     "build:web": "vite build --config web/vite.config.ts && node scripts/check-web-build.mjs",
     "build:server": "node scripts/build-server.mjs",
-    "build": "npm run build:web && npm run build:server",
+    "build": "pnpm run build:web && pnpm run build:server",
     "start": "node dist/server/server.mjs",
     "typecheck": "tsc --noEmit",
     "typecheck:web": "tsc -p web/tsconfig.json --noEmit"

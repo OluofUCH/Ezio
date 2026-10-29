@@ -8,6 +8,7 @@ import {
   type SyncPullPayload,
 } from '@/lib/sync/payload'
 import { pullSyncSchema } from '@/lib/validation/local-server'
+import { recordRosterGrant } from '@/src/modules/cbt-results/eligibility'
 
 export const runtime = 'nodejs'
 
@@ -82,7 +83,7 @@ export const GET = route(async (req) => {
      * hall server from holding every PIN in the school.
      */
     db.student.findMany({
-      where: { classLevel: exam.classLevel },
+      where: { classLevel: exam.classLevel, NOT: { enrollments: { some: { isCurrent: true, status: 'WITHDRAWN' } } } },
       select: SYNC_STUDENT_SELECT,
       orderBy: { regNumber: 'asc' },
     }),
@@ -109,6 +110,7 @@ export const GET = route(async (req) => {
   // Scoped by the tenant extension to the device's school, so this cannot be null in
   // practice; the guard exists because the type says it can.
   if (!school) throw notFound('School not found.')
+  await recordRosterGrant(db, school.id, session.localServerId, exam.id, exam.classLevel, students.map((student) => student.id))
 
   const payload: SyncPullPayload = {
     localServer: { id: session.localServerId, name: session.name },

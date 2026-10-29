@@ -14,6 +14,7 @@ after a successful push.
 ## 1. Prerequisites
 
 - Node.js 20 or newer.
+- pnpm (the version pinned in `package.json`).
 - A Supabase project (or any PostgreSQL 14+ database).
 - A host for the Next.js app: Vercel is the intended target, but any Node host works.
 - A generated JWT secret and a cron secret.
@@ -69,10 +70,13 @@ Notes:
 
 Run these against the production database from a trusted machine or a CI job. Do not
 run the seed with the default `NODE_ENV` unless you intend to create demo data.
+Review each pending migration before deployment. For the staged SMS rollout and
+backfill, follow [sms-phase-1.md](sms-phase-1.md).
 
 ```bash
-npm ci
-npx prisma migrate deploy
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm exec prisma generate
+pnpm exec prisma migrate deploy
 ```
 
 Then create the first platform super admin. On PowerShell:
@@ -80,14 +84,14 @@ Then create the first platform super admin. On PowerShell:
 ```powershell
 $env:NODE_ENV='production'
 $env:SEED_SUPER_ADMIN_PASSWORD='<unique-password-at-least-12-chars>'
-npm run db:seed
+pnpm run db:seed
 ```
 
 With `NODE_ENV=production` the seed skips the demo school, demo students and demo hall,
 and refuses to continue if the super-admin password is weak or still the sample value.
 Sign in as that account immediately and change the password from the account page.
 
-Do not run `npm run db:seed` with `NODE_ENV` unset against production: that path creates
+Do not run `pnpm run db:seed` with `NODE_ENV` unset against production: that path creates
 the demo school and predictable demo credentials.
 
 ---
@@ -95,9 +99,9 @@ the demo school and predictable demo credentials.
 ## 4. Build and deploy
 
 ```bash
-npm ci
-npm run build
-npm start
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run build
+pnpm start
 ```
 
 The production build performs `prisma generate` and `next build`. The app requires the
@@ -128,7 +132,7 @@ installer to a GitHub Release so the **Download Windows installer** button in
 
 ### Any Node host
 
-Run `npm run build` then `npm start` behind TLS. Put a reverse proxy in front and set
+Run `pnpm run build` then `pnpm start` behind TLS. Put a reverse proxy in front and set
 `TRUST_PROXY=1` only if the proxy strips and rewrites `X-Forwarded-For`. Allow outbound
 access to Supabase; no inbound access is needed beyond HTTPS.
 
@@ -175,7 +179,7 @@ access to Supabase; no inbound access is needed beyond HTTPS.
 Before a schema change:
 
 1. Take a Supabase backup or snapshot.
-2. Apply migrations with `npx prisma migrate deploy`.
+2. Review pending migrations, then apply approved SQL with `pnpm exec prisma migrate deploy`.
 3. Deploy the matching application build.
 4. Verify `/api/health` and the first-run checklist.
 5. Run the smoke suite against a staging database (see below).
@@ -184,6 +188,21 @@ Prisma migrations are forward-only; rolling back the app does not undo a migrati
 release must be reverted after a destructive migration, restore the database snapshot.
 Prefer additive migrations so the previous app version can keep serving during a
 rolling deploy.
+
+### SMS rollout order
+
+The SMS migrations are additive, but school initialization is deliberately staged:
+
+1. Back up Supabase and review every pending SQL file.
+2. Apply the approved migrations and deploy the matching cloud build.
+3. For each school, run `pnpm sms:backfill --config <file> --dry-run`, review it,
+   apply it, then require a clean second dry run.
+4. Run `pnpm sms:backfill-results --school <id>` and then `--apply` for each school.
+5. Verify CBT online and one real LAN pull/push before activating session rollover.
+
+Do **not** add/apply the later `AssessmentComponent.isActive NOT NULL` migration
+until all live schools have completed step 4 and a dry check reports no null rows.
+See `docs/sms-phases-3-6.md` for manual verification and policy details.
 
 Hall machines do not need a manual database reset. The local server applies SQLite
 migrations on startup and baselines a database created by an older `prisma db push`
@@ -197,9 +216,9 @@ upload.
 Run these against a seeded, non-production database, never against production:
 
 ```bash
-npm run smoke           # exam flow, tenant and class-level isolation
-npm run smoke-sync      # provisioning, pull, push, re-grading, idempotency
-npm run smoke-security  # headers, cookies, pairing, rotation, throttles
+pnpm run smoke           # exam flow, tenant and class-level isolation
+pnpm run smoke-sync      # provisioning, pull, push, re-grading, idempotency
+pnpm run smoke-security  # headers, cookies, pairing, rotation, throttles
 ```
 
 `smoke-security` exercises the maintenance endpoint only when `CRON_SECRET` is set.

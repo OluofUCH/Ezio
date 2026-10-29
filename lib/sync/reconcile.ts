@@ -1,9 +1,10 @@
 import { Prisma } from '@prisma/client'
 import { conflict, notFound } from '@/lib/errors'
 import { GRADING_SELECT, assertOptionsBelongToQuestion, gradeAnswer } from '@/lib/grading'
-import { assertAffected, type TenantDb } from '@/lib/tenant'
+import { type TenantDb } from '@/lib/tenant'
 import type { PushOutcome } from '@/lib/sync/payload'
 import type { PushedSession } from '@/lib/validation/local-server'
+import { wasEligibleOffline } from '@/src/modules/cbt-results/eligibility'
 
 /**
  * OFFLINE SESSION RECONCILIATION
@@ -51,7 +52,7 @@ export async function reconcilePushedSession(
   const [exam, student] = await Promise.all([
     db.exam.findFirst({
       where: { id: pushed.examId },
-      select: { id: true, title: true, classLevel: true, maxAttempts: true },
+      select: { id: true, title: true, classLevel: true, maxAttempts: true, termId: true },
     }),
     db.student.findFirst({
       where: { id: pushed.studentId },
@@ -67,12 +68,6 @@ export async function reconcilePushedSession(
    * it at login, but that check ran on the device; enforcing it again here means an
    * offline path cannot be used to sidestep a rule the online path applies.
    */
-  if (exam.classLevel !== student.classLevel) {
-    throw conflict(
-      `${student.regNumber} is ${student.classLevel} but "${exam.title}" is a ${exam.classLevel} exam.`,
-      'WRONG_CLASS_LEVEL',
-    )
-  }
 
   /* ---------------- 2. already reconciled? ---------------- */
 
@@ -84,8 +79,10 @@ export async function reconcilePushedSession(
    */
   const existing = await db.examSession.findFirst({
     where: { localServerId, localId: pushed.localId },
-    select: { id: true, syncVersion: true, score: true, maxScore: true },
+    select: { id: true, examId: true, studentId: true, syncVersion: true, score: true, maxScore: true },
   })
+
+  if (existing && (existing.examId !== pushed.examId || existing.studentId !== pushed.studentId)) throw conflict('A local sitting ID cannot be reassigned to another exam or student.')
 
   if (existing && pushed.syncVersion <= existing.syncVersion) {
     /**
@@ -94,6 +91,11 @@ export async function reconcilePushedSession(
      * clear its local flag. Returning an error would make a flaky link retry forever.
      */
     return { localId: pushed.localId, outcome: 'ALREADY_SYNCED', sessionId: existing.id }
+  }
+
+  const withdrawn = await db.enrollment.findFirst({ where: { studentId: student.id, isCurrent: true, status: 'WITHDRAWN' }, select: { id: true } })
+  if ((exam.classLevel !== student.classLevel || withdrawn) && !await wasEligibleOffline(db, localServerId, exam, student.id, pushed.startedAt)) {
+    throw conflict(`${student.regNumber} is ${student.classLevel} but "${exam.title}" is a ${exam.classLevel} exam, with no historical eligibility.`, 'WRONG_CLASS_LEVEL')
   }
 
   /* ---------------- 3. grade against cloud data ---------------- */
@@ -204,14 +206,9 @@ export async function reconcilePushedSession(
      * what the student selected, so a partial merge could leave a stale answer from the
      * superseded version sitting alongside the corrected ones.
      */
-    await db.$transaction(async (tx) => {
-      await tx.answer.deleteMany({ where: { examSessionId: existing.id } })
-      await tx.answer.createMany({
-        data: answerRows.map((row) => ({ ...row, examSessionId: existing.id })),
-      })
-
+    const changed = await db.$transaction(async (tx) => {
       const updated = await tx.examSession.updateMany({
-        where: { id: existing.id },
+        where: { id: existing.id, syncVersion: { lt: pushed.syncVersion } },
         data: {
           status: pushed.status,
           startedAt: pushed.startedAt,
@@ -223,9 +220,12 @@ export async function reconcilePushedSession(
           syncVersion: pushed.syncVersion,
         },
       })
-      assertAffected(updated, 'Session vanished mid-reconciliation.')
+      if (!updated.count) return false
+      await tx.answer.deleteMany({ where: { examSessionId: existing.id } })
+      await tx.answer.createMany({ data: answerRows.map((row) => ({ ...row, examSessionId: existing.id })) })
+      return true
     })
-
+    if (!changed) return { localId: pushed.localId, outcome: 'ALREADY_SYNCED', sessionId: existing.id }
     return { localId: pushed.localId, outcome: 'UPDATED', sessionId: existing.id, score, maxScore }
   }
 
@@ -271,9 +271,11 @@ export async function reconcilePushedSession(
     if (typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2002') {
       const winner = await db.examSession.findFirst({
         where: { localServerId, localId: pushed.localId },
-        select: { id: true },
+        select: { id: true, examId: true, studentId: true, syncVersion: true },
       })
       if (winner) {
+        if (winner.examId !== pushed.examId || winner.studentId !== pushed.studentId) throw conflict('Local sitting identity conflict.')
+        if (winner.syncVersion < pushed.syncVersion) return reconcilePushedSession(db, localServerId, pushed, now)
         return { localId: pushed.localId, outcome: 'ALREADY_SYNCED', sessionId: winner.id }
       }
     }

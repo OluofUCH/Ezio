@@ -46,6 +46,25 @@ model School {
   exams        Exam[]
   students     Student[]
   localServers LocalServer[]
+  academicSessions AcademicSession[]
+  terms            Term[]
+  classArms        ClassArm[]
+  subjects         Subject[]
+  enrollments      Enrollment[]
+  assessmentComponents AssessmentComponent[]
+  teacherProfiles     TeacherProfile[]
+  teachingAssignments TeachingAssignment[]
+  studentProfiles StudentProfile[]
+  studentPhotos StudentPhoto[]
+  attendanceRecords Attendance[]
+  gradeBands GradeBand[]
+  resultPolicies TermResultPolicy[]
+  resultSubmissions ResultSubmission[]
+  scores Score[]
+  scoreAudits ScoreAuditLog[]
+  reportCards ReportCard[]
+  announcements Announcement[]
+  rosterGrants OfflineRosterGrant[]
 
   @@index([slug])
 }
@@ -82,7 +101,9 @@ model LocalServer {
 
   school       School         @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   examSessions ExamSession[]
+  rosterGrants OfflineRosterGrant[]
 
+  @@unique([schoolId, id])
   @@index([schoolId])
 }
 
@@ -152,7 +173,18 @@ model User {
 
   school       School?  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   examsCreated Exam[]   @relation("ExamCreatedBy")
+  formTeacherArms ClassArm[] @relation("FormTeacher")
+  teacherProfile TeacherProfile?
+  teachingAssignments TeachingAssignment[] @relation("AssignedTeacher")
+  attendanceMarked Attendance[] @relation("AttendanceMarker")
+  resultsSubmitted ResultSubmission[] @relation("ResultSubmitter")
+  resultsApproved ResultSubmission[] @relation("ResultApprover")
+  resultsPublished ResultSubmission[] @relation("ResultPublisher")
+  scoresEdited Score[] @relation("ScoreEditor")
+  scoreAudits ScoreAuditLog[] @relation("ScoreAuditor")
+  announcements Announcement[] @relation("AnnouncementAuthor")
 
+  @@unique([schoolId, id])
   @@index([schoolId])
   @@index([email])
 }
@@ -175,7 +207,12 @@ model Student {
 
   school       School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   examSessions ExamSession[]
+  enrollments  Enrollment[]
+  profile StudentProfile?
+  photo StudentPhoto?
+  rosterGrants OfflineRosterGrant[]
 
+  @@unique([schoolId, id])
   @@unique([schoolId, regNumber])
   @@index([schoolId])
   @@index([schoolId, classLevel])
@@ -196,6 +233,10 @@ model Exam {
   schoolId       String
   title          String
   subject        String
+  // Optional cloud-only SMS links. The label above is still the CBT/LAN contract.
+  subjectId      String?
+  termId         String?
+  componentId    String?
   classLevel     ClassLevel // required — students only see/take exams matching their own classLevel.
   durationMins   Int
   mode           ExamMode @default(HYBRID)
@@ -213,9 +254,18 @@ model Exam {
   createdBy    User          @relation("ExamCreatedBy", fields: [createdById], references: [id])
   questions    Question[]
   examSessions ExamSession[]
+  subjectRecord Subject? @relation(fields: [schoolId, subjectId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  term          Term? @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  component     AssessmentComponent? @relation(fields: [schoolId, componentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  scores Score[]
+  rosterGrants OfflineRosterGrant[]
 
+  @@unique([schoolId, id])
   @@index([schoolId])
   @@index([schoolId, classLevel])
+  @@index([schoolId, subjectId])
+  @@index([schoolId, termId])
+  @@index([schoolId, componentId])
 }
 
 enum QuestionType {
@@ -292,6 +342,7 @@ model ExamSession {
   student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
   localServer LocalServer? @relation(fields: [localServerId], references: [id])
   answers     Answer[]
+  importedScores Score[] @relation("SourceSitting")
 
   // A student can only have one active/local session per exam per server context,
   // but localId+localServerId must be unique to prevent double-sync creating duplicates.
@@ -333,4 +384,451 @@ model Answer {
 
   @@unique([examSessionId, questionId])
   @@index([examSessionId])
+}
+
+// ------------------------------------------------------------
+// SMS FOUNDATIONS — CLOUD ONLY (never copied into the hall schema)
+// ------------------------------------------------------------
+
+model AcademicSession {
+  id        String   @id @default(cuid())
+  schoolId  String
+  name      String
+  startDate DateTime @db.Date
+  endDate   DateTime @db.Date
+  isCurrent Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school      School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  terms       Term[]
+  enrollments Enrollment[]
+  teachingAssignments TeachingAssignment[]
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, name])
+  // One current session per school: partial unique index in migration SQL.
+  @@index([schoolId, isCurrent])
+}
+
+model Term {
+  id                String   @id @default(cuid())
+  schoolId          String
+  academicSessionId String
+  name              String
+  orderIndex        Int
+  startDate         DateTime @db.Date
+  endDate           DateTime @db.Date
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  school          School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  academicSession AcademicSession @relation(fields: [schoolId, academicSessionId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  exams           Exam[]
+  attendanceRecords Attendance[]
+  resultPolicy TermResultPolicy?
+  resultSubmissions ResultSubmission[]
+  scores Score[]
+  reportCards ReportCard[]
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, academicSessionId, name])
+  @@unique([schoolId, academicSessionId, orderIndex])
+}
+
+model ClassArm {
+  id            String     @id @default(cuid())
+  schoolId      String
+  level         ClassLevel
+  name          String
+  // Explicit fallback for legacy CBT requests that only supply a class level.
+  isDefault     Boolean    @default(false)
+  formTeacherId String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  school      School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  formTeacher User?        @relation("FormTeacher", fields: [schoolId, formTeacherId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  enrollments Enrollment[]
+  teachingAssignments TeachingAssignment[]
+  resultSubmissions ResultSubmission[]
+  reportCards ReportCard[]
+  announcements Announcement[]
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, level, name])
+  // One default arm per school/level: partial unique index in migration SQL.
+  @@index([schoolId, level, isDefault])
+  @@index([schoolId, formTeacherId])
+}
+
+model Subject {
+  id             String   @id @default(cuid())
+  schoolId       String
+  name           String
+  normalizedName String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  exams  Exam[]
+  teachingAssignments TeachingAssignment[]
+  resultSubmissions ResultSubmission[]
+  scores Score[]
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, normalizedName])
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+enum EnrollmentReason {
+  INITIAL
+  LEGACY_BACKFILL
+  PLACEMENT_CHANGE
+  PROMOTION
+  REPEAT
+  TRANSFER
+  WITHDRAWAL
+}
+
+model Enrollment {
+  id                String           @id @default(cuid())
+  schoolId          String
+  studentId         String
+  academicSessionId String
+  classArmId        String
+  sequence          Int
+  status            EnrollmentStatus @default(ACTIVE)
+  reason            EnrollmentReason @default(INITIAL)
+  effectiveFrom     DateTime         @default(now())
+  effectiveTo       DateTime?
+  isCurrent         Boolean          @default(false)
+  createdAt         DateTime         @default(now())
+
+  school          School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student         Student         @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  academicSession AcademicSession @relation(fields: [schoolId, academicSessionId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  classArm        ClassArm        @relation(fields: [schoolId, classArmId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  attendanceRecords Attendance[]
+  scores Score[]
+  reportCards ReportCard[]
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, studentId, academicSessionId, sequence], map: "Enrollment_student_session_sequence_key")
+  // One current placement per student: partial unique index in migration SQL.
+  @@index([schoolId, studentId, isCurrent])
+  @@index([schoolId, academicSessionId, classArmId])
+}
+
+// Schema dependency only in Phase 1. Configuration/100-point scheme validation
+// and scoring are introduced together in Phase 4; no defaults are fabricated.
+model AssessmentComponent {
+  id        String   @id @default(cuid())
+  schoolId  String
+  name      String
+  maxScore  Decimal  @db.Decimal(5, 2)
+  orderIndex Int     @default(0)
+  // Nullable expansion: legacy null values are treated as active until backfilled.
+  isActive Boolean?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  exams  Exam[]
+  scores Score[]
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, name])
+}
+
+// Optional teacher details extend the existing staff login account. Existing
+// teachers have no profile row until an administrator supplies profile data.
+model TeacherProfile {
+  id             String   @id @default(cuid())
+  schoolId       String
+  userId         String
+  phone          String?
+  qualifications String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [schoolId, userId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, userId])
+}
+
+model TeachingAssignment {
+  id                String   @id @default(cuid())
+  schoolId          String
+  teacherId         String
+  subjectId         String
+  classArmId        String
+  academicSessionId String
+  // Deactivation preserves the identity of a past assignment. Permission checks
+  // must also verify that the teacher's live account is active and still TEACHER.
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  school          School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teacher         User            @relation("AssignedTeacher", fields: [schoolId, teacherId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  subject         Subject         @relation(fields: [schoolId, subjectId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  classArm        ClassArm        @relation(fields: [schoolId, classArmId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  academicSession AcademicSession @relation(fields: [schoolId, academicSessionId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([schoolId, id])
+  @@unique([schoolId, teacherId, subjectId, classArmId, academicSessionId], map: "TeachingAssignment_scope_key")
+  @@index([schoolId, teacherId, academicSessionId, isActive], map: "TeachingAssignment_teacher_session_idx")
+  @@index([schoolId, classArmId, academicSessionId, subjectId], map: "TeachingAssignment_arm_session_subject_idx")
+}
+
+model StudentProfile {
+  id String @id @default(cuid())
+  schoolId String
+  studentId String
+  dateOfBirth DateTime? @db.Date
+  gender String?
+  address String?
+  guardianName String?
+  guardianRelationship String?
+  guardianPhone String?
+  guardianEmail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([schoolId, id])
+  @@unique([schoolId, studentId])
+}
+
+model StudentPhoto {
+  id String @id @default(cuid())
+  schoolId String
+  studentId String
+  mimeType String
+  data Bytes
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([schoolId, id])
+  @@unique([schoolId, studentId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+}
+
+model Attendance {
+  id String @id @default(cuid())
+  schoolId String
+  enrollmentId String
+  termId String
+  date DateTime @db.Date
+  status AttendanceStatus
+  markedById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  enrollment Enrollment @relation(fields: [schoolId, enrollmentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  term Term @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  markedBy User @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: Restrict)
+  @@unique([schoolId, id])
+  @@unique([schoolId, enrollmentId, date])
+  @@index([schoolId, termId, date])
+}
+
+model GradeBand {
+  id String @id @default(cuid())
+  schoolId String
+  minScore Decimal @db.Decimal(5, 2)
+  maxScore Decimal @db.Decimal(5, 2)
+  grade String
+  remark String
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  @@unique([schoolId, id])
+  @@index([schoolId, isActive])
+}
+
+model TermResultPolicy {
+  id String @id @default(cuid())
+  schoolId String
+  termId String
+  components Json
+  gradeBands Json
+  createdAt DateTime @default(now())
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  term Term @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  submissions ResultSubmission[]
+  @@unique([schoolId, id])
+  @@unique([schoolId, termId])
+}
+
+enum ResultStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PUBLISHED
+}
+
+enum ScoreSource {
+  MANUAL
+  CBT
+}
+
+model ResultSubmission {
+  id String @id @default(cuid())
+  schoolId String
+  classArmId String
+  subjectId String
+  termId String
+  policyId String
+  status ResultStatus @default(DRAFT)
+  submittedById String?
+  approvedById String?
+  publishedById String?
+  submittedAt DateTime?
+  approvedAt DateTime?
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  classArm ClassArm @relation(fields: [schoolId, classArmId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  subject Subject @relation(fields: [schoolId, subjectId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  term Term @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  policy TermResultPolicy @relation(fields: [schoolId, policyId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  submittedBy User? @relation("ResultSubmitter", fields: [submittedById], references: [id], onDelete: Restrict)
+  approvedBy User? @relation("ResultApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  publishedBy User? @relation("ResultPublisher", fields: [publishedById], references: [id], onDelete: Restrict)
+  scores Score[]
+  @@unique([schoolId, id])
+  @@unique([schoolId, classArmId, subjectId, termId], map: "ResultSubmission_scope_key")
+  @@index([schoolId, termId, status])
+}
+
+model Score {
+  id String @id @default(cuid())
+  schoolId String
+  enrollmentId String
+  termId String
+  subjectId String
+  componentId String
+  submissionId String
+  value Decimal @db.Decimal(6, 2)
+  source ScoreSource @default(MANUAL)
+  examId String?
+  sourceSessionId String?
+  sourceSyncVersion Int?
+  updatedById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  enrollment Enrollment @relation(fields: [schoolId, enrollmentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  term Term @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  subject Subject @relation(fields: [schoolId, subjectId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  component AssessmentComponent @relation(fields: [schoolId, componentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  submission ResultSubmission @relation(fields: [schoolId, submissionId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  exam Exam? @relation(fields: [schoolId, examId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  sourceSession ExamSession? @relation("SourceSitting", fields: [sourceSessionId], references: [id], onDelete: Restrict)
+  updatedBy User @relation("ScoreEditor", fields: [updatedById], references: [id], onDelete: Restrict)
+  audits ScoreAuditLog[]
+  @@unique([schoolId, id])
+  @@unique([schoolId, enrollmentId, termId, subjectId, componentId], map: "Score_cell_key")
+  @@index([schoolId, submissionId])
+}
+
+model ScoreAuditLog {
+  id String @id @default(cuid())
+  schoolId String
+  scoreId String
+  actorUserId String
+  oldValue Decimal? @db.Decimal(6, 2)
+  newValue Decimal @db.Decimal(6, 2)
+  oldSource ScoreSource?
+  newSource ScoreSource
+  reason String
+  createdAt DateTime @default(now())
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  score Score @relation(fields: [schoolId, scoreId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  actor User @relation("ScoreAuditor", fields: [actorUserId], references: [id], onDelete: Restrict)
+  @@unique([schoolId, id])
+  @@index([schoolId, scoreId, createdAt])
+}
+
+model ReportCard {
+  id String @id @default(cuid())
+  schoolId String
+  enrollmentId String
+  termId String
+  classArmId String
+  total Decimal @db.Decimal(10, 2)
+  average Decimal @db.Decimal(5, 2)
+  position Int
+  subjectCount Int
+  status ResultStatus @default(APPROVED)
+  teacherRemark String?
+  principalRemark String?
+  snapshot Json
+  revision Int @default(1)
+  approvedAt DateTime @default(now())
+  publishedAt DateTime?
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  enrollment Enrollment @relation(fields: [schoolId, enrollmentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  term Term @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  classArm ClassArm @relation(fields: [schoolId, classArmId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([schoolId, id])
+  @@unique([schoolId, enrollmentId, termId])
+  @@index([schoolId, classArmId, termId, status])
+}
+
+enum AnnouncementAudience {
+  ALL_STAFF
+  ROLE
+  CLASS_ARM
+}
+
+model Announcement {
+  id String @id @default(cuid())
+  schoolId String
+  title String
+  body String
+  audience AnnouncementAudience
+  targetRole UserRole?
+  classArmId String?
+  authorId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  classArm ClassArm? @relation(fields: [schoolId, classArmId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  author User @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  @@unique([schoolId, id])
+  @@index([schoolId, createdAt])
+}
+
+model OfflineRosterGrant {
+  id String @id @default(cuid())
+  schoolId String
+  localServerId String
+  examId String
+  studentId String
+  classLevel ClassLevel
+  firstPulledAt DateTime @default(now())
+  lastPulledAt DateTime @default(now())
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  localServer LocalServer @relation(fields: [schoolId, localServerId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  exam Exam @relation(fields: [schoolId, examId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  student Student @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([schoolId, id])
+  @@unique([schoolId, localServerId, examId, studentId], map: "OfflineRosterGrant_scope_key")
 }

@@ -4,6 +4,8 @@ import { requireStudent } from '@/lib/auth/session'
 import { STUDENT_PAPER_SELECT, buildStudentPaper, enforceSessionDeadline, type StudentFacingQuestion } from '@/lib/grading'
 import { isWithinExamWindow, secondsRemaining, sessionDeadline } from '@/lib/timing'
 import { parseParam } from '@/lib/validation/common'
+import { schoolTransaction } from '@/src/modules/shared/transaction'
+import { assertStudentCanStart } from '@/src/modules/students/management'
 
 export const runtime = 'nodejs'
 
@@ -35,6 +37,7 @@ export const POST = route<Params>(async (req, ctx) => {
   })
   if (!student) throw notFound('Student record not found.')
   if (!student.school.isActive) throw forbidden('This school is currently inactive. Contact your administrator.')
+  await assertStudentCanStart(db, student.id)
 
   const exam = await db.exam.findFirst({
     where: { id: examId, isPublished: true },
@@ -112,9 +115,14 @@ export const POST = route<Params>(async (req, ctx) => {
   let startedAt: Date
 
   try {
-    const createdSession = await db.examSession.create({
-      data: { examId, studentId: student.id },
-      select: { id: true, startedAt: true },
+    const createdSession = await schoolTransaction(db, async (tx) => {
+      const live = await tx.student.findFirst({ where: { id: student.id }, select: { classLevel: true } })
+      const paper = await tx.exam.findFirst({ where: { id: examId, isPublished: true }, select: { classLevel: true, durationMins: true } })
+      if (!live || !paper || live.classLevel !== paper.classLevel || paper.classLevel !== exam.classLevel || paper.durationMins !== exam.durationMins) throw conflict('Class placement or exam settings changed. Reload the exam before starting.')
+      await assertStudentCanStart(tx, student.id)
+      const used = await tx.examSession.count({ where: { examId, studentId: student.id, status: { not: 'IN_PROGRESS' } } })
+      if (used >= exam.maxAttempts) throw conflict('The attempt limit has been reached.', 'ATTEMPT_LIMIT_REACHED')
+      return tx.examSession.create({ data: { examId, studentId: student.id }, select: { id: true, startedAt: true } })
     })
     sessionId = createdSession.id
     startedAt = createdSession.startedAt

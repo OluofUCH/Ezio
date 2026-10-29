@@ -2,6 +2,10 @@ import { ClassLevel, QuestionType } from '@prisma/client'
 import { unscopedDb } from '../lib/db'
 import { hashPassword } from '../lib/auth/password'
 import { hashDeviceKey } from '../lib/auth/device-key'
+import { tenantClient } from '../lib/tenant'
+import { schoolTransaction } from '../src/modules/shared/transaction'
+import { currentAcademicSetup, ensureCurrentEnrollment } from '../src/modules/students/enrollments'
+import { ensureSubject } from '../src/modules/school-setup/subjects'
 
 /**
  * DATABASE SEED
@@ -144,6 +148,7 @@ async function seedDemoSchool(): Promise<void> {
     select: { id: true, name: true, slug: true },
   })
   console.log(`  school       ${school.name} (${school.slug})`)
+  const schoolDb = tenantClient(school.id)
 
   const password = env('SEED_DEMO_PASSWORD', 'DemoPassword123!')
   const passwordHash = await hashPassword(password)
@@ -179,10 +184,14 @@ async function seedDemoSchool(): Promise<void> {
   console.log(`  password     ${password}  (both staff accounts)`)
 
   for (const student of DEMO_STUDENTS) {
-    await unscopedDb.student.upsert({
-      where: { schoolId_regNumber: { schoolId: school.id, regNumber: student.regNumber } },
-      update: {},
-      create: { ...student, schoolId: school.id },
+    await schoolTransaction(schoolDb, async (tx) => {
+      const saved = await tx.student.upsert({
+        where: { schoolId_regNumber: { schoolId: school.id, regNumber: student.regNumber } },
+        update: {},
+        create: { ...student, schoolId: school.id },
+      })
+      const setup = await currentAcademicSetup(tx)
+      if (setup) await ensureCurrentEnrollment(tx, saved, setup, 'LEGACY_BACKFILL')
     })
   }
   console.log(`  students     ${DEMO_STUDENTS.length} (JSS2 x3, SS1 x1)`)
@@ -230,11 +239,13 @@ async function seedDemoSchool(): Promise<void> {
     return
   }
 
+  const subject = await schoolTransaction(schoolDb, (tx) => ensureSubject(tx, school.id, 'General Knowledge'))
   const exam = await unscopedDb.exam.create({
     data: {
       schoolId: school.id,
       title: 'JSS2 General Knowledge — First Term',
       subject: 'General Knowledge',
+      subjectId: subject.id,
       classLevel: ClassLevel.JSS2,
       durationMins: 30,
       mode: 'HYBRID',

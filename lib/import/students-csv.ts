@@ -24,6 +24,7 @@ export type ParsedStudentRow = {
   fullName: string
   classLevel: ClassLevel
   pin: string
+  arm?: string
   /** True when the PIN was generated rather than supplied in the file. */
   pinGenerated: boolean
   warnings: RowIssue[]
@@ -35,7 +36,7 @@ export type StudentParseReport = {
   errors: RowIssue[]
 }
 
-export const ROSTER_HEADERS = ['regNumber', 'fullName', 'classLevel', 'pin'] as const
+export const ROSTER_HEADERS = ['regNumber', 'fullName', 'classLevel', 'pin', 'arm'] as const
 const REQUIRED_HEADERS = ['regNumber', 'fullName', 'classLevel'] as const
 
 function normaliseHeader(header: string): string {
@@ -159,6 +160,8 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
 
     /* -- pin (optional) -- */
     const rawPin = cell(row, 'pin')
+    const arm = cell(row, 'arm')
+    if (arm.length > 120) err('arm', 'ARM_TOO_LONG', 'Arm name must be at most 120 characters.')
     let pin = ''
     let pinGenerated = false
     if (!rawPin) {
@@ -182,6 +185,7 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
       fullName: rawName,
       classLevel: classLevel as ClassLevel,
       pin,
+      arm: arm || undefined,
       pinGenerated,
       warnings,
     })

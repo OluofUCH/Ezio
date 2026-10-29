@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { api, errorMessage } from "@/lib/client/api";
@@ -44,6 +44,7 @@ export function AppShell({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const drawerRef = useRef<HTMLElement>(null);
 
   // A navigation is the natural moment to close the drawer; doing it here rather than
   // in each link's onClick also covers back/forward and programmatic pushes.
@@ -53,11 +54,39 @@ export function AppShell({
 
   useEffect(() => {
     if (!drawerOpen) return;
+    const previous = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const focusable = () => Array.from(drawerRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []);
+    focusable()[0]?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setDrawerOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDrawerOpen(false);
+      }
+      if (event.key === "Tab") {
+        const items = focusable();
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !drawerRef.current?.contains(document.activeElement))) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
     };
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const closeOnDesktop = () => { if (desktop.matches) setDrawerOpen(false); };
+    desktop.addEventListener("change", closeOnDesktop);
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
+    return () => {
+      desktop.removeEventListener("change", closeOnDesktop);
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = overflow;
+      if (previous instanceof HTMLElement && previous.isConnected) previous.focus();
+    };
   }, [drawerOpen]);
 
   async function logout() {
@@ -79,7 +108,7 @@ export function AppShell({
   }
 
   const isActive = (href: string) =>
-    pathname === href || (pathname.startsWith(`${href}/`) && href !== "/");
+    pathname === href || (pathname.startsWith(`${href}/`) && !["/", "/sms/staff", "/sms/student"].includes(href));
 
   const navLinks = (
     <nav className="flex flex-1 flex-col gap-1 overflow-y-auto custom-scrollbar">
@@ -92,8 +121,8 @@ export function AppShell({
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "flex items-center gap-3 rounded-lg border-l-4 border-primary-container bg-primary-container/20 px-4 py-3 font-label-md text-label-md font-bold text-on-surface transition-all active:scale-[0.98]"
-                : "flex items-center gap-3 rounded-lg px-4 py-3 font-label-md text-label-md text-on-surface-variant transition-all hover:bg-surface-container-low hover:text-on-surface active:scale-[0.98]"
+                 ? "flex items-center gap-3 rounded-lg border-l-4 border-primary-container bg-primary-container/20 px-4 py-3 font-label-md text-label-md font-bold text-on-surface transition-colors motion-safe:active:scale-[0.98]"
+                 : "flex items-center gap-3 rounded-lg px-4 py-3 font-label-md text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface motion-safe:active:scale-[0.98]"
             }
           >
             <Icon
@@ -110,14 +139,14 @@ export function AppShell({
 
   const sidebarBody = (
     <>
-      <div className="mb-6 flex items-center gap-3 border-b border-border-subtle px-2 pb-4 pt-2">
+      <div className="mb-6 flex items-center gap-3 border-b border-border-subtle px-2 pb-4 pr-12 pt-2 md:pr-2">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-container">
           <Icon name="school" filled className="text-on-surface" />
         </div>
         <div className="min-w-0">
-          <h1 className="truncate font-headline-md text-headline-md font-bold leading-tight text-on-surface">
+          <p className="truncate font-headline-md text-headline-md font-bold leading-tight text-on-surface">
             Ezio
-          </h1>
+          </p>
           <p className="truncate font-label-sm text-label-sm text-on-surface-variant">
             {portalLabel}
           </p>
@@ -162,8 +191,9 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
+      <a href="#main-content" inert={drawerOpen || undefined} className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:left-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded-lg focus-visible:bg-surface focus-visible:px-4 focus-visible:py-3 focus-visible:text-on-surface">Skip to content</a>
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 z-20 hidden h-screen w-sidebar-width flex-col gap-2 border-r border-border-subtle bg-surface p-4 shadow-xl md:flex">
+      <aside inert={drawerOpen || undefined} className="fixed left-0 top-0 z-20 hidden h-screen w-sidebar-width flex-col gap-2 border-r border-border-subtle bg-surface p-4 shadow-xl md:flex">
         {sidebarBody}
       </aside>
 
@@ -175,7 +205,9 @@ export function AppShell({
             onClick={() => setDrawerOpen(false)}
           />
           <aside
-            className="absolute left-0 top-0 flex h-full w-[min(300px,85vw)] animate-fade-in flex-col gap-2 bg-surface p-4 shadow-2xl"
+            ref={drawerRef}
+            id="mobile-navigation"
+            className="absolute left-0 top-0 flex h-full w-[min(300px,85vw)] flex-col gap-2 overflow-y-auto overscroll-contain bg-surface p-4 shadow-2xl motion-safe:animate-fade-in"
             role="dialog"
             aria-modal="true"
             aria-label="Navigation"
@@ -183,7 +215,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
-              className="absolute right-3 top-3 rounded-full p-2 text-on-surface-variant hover:bg-surface-container"
+              className="absolute right-3 top-3 min-h-11 min-w-11 rounded-full p-2 text-on-surface-variant hover:bg-surface-container"
               aria-label="Close navigation"
             >
               <Icon name="close" size={20} />
@@ -193,14 +225,16 @@ export function AppShell({
         </div>
       ) : null}
 
-      <div className="flex w-full flex-1 flex-col md:ml-sidebar-width">
+      <div inert={drawerOpen || undefined} className="flex min-w-0 w-full flex-1 flex-col md:ml-sidebar-width">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border-subtle bg-surface px-margin-mobile shadow-sm md:px-margin-desktop">
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="-ml-2 rounded-lg p-2 text-on-surface transition-colors hover:bg-surface-container md:hidden"
+              className="-ml-2 min-h-11 min-w-11 rounded-lg p-2 text-on-surface transition-colors hover:bg-surface-container md:hidden"
               aria-label="Open navigation"
+              aria-expanded={drawerOpen}
+              aria-controls="mobile-navigation"
             >
               <Icon name="menu" />
             </button>
@@ -219,7 +253,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 p-margin-mobile md:p-margin-desktop">
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 scroll-mt-20 p-margin-mobile md:p-margin-desktop">
           <div className="mx-auto w-full max-w-container-max">{children}</div>
         </main>
       </div>

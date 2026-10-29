@@ -18,6 +18,7 @@ prisma/*.db
 prisma/*.db-journal
 prisma/dev.db*
 local-server/data/
+local-server/generated/
 packaging/windows/stage/
 packaging/windows/cache/
 

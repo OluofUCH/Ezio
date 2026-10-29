@@ -1,9 +1,9 @@
 import { ok, readJson, route } from '@/lib/api'
-import { conflict, forbidden, notFound } from '@/lib/errors'
+import { forbidden, notFound } from '@/lib/errors'
 import { canManageSchool, canReadStudentPins, requireSchoolScope } from '@/lib/auth/session'
-import { assertAffected, resolveStudent } from '@/lib/tenant'
 import { parseParam } from '@/lib/validation/common'
 import { updateStudentSchema } from '@/lib/validation/student'
+import { updateRosterStudent } from '@/src/modules/students/service'
 
 export const runtime = 'nodejs'
 
@@ -55,7 +55,8 @@ export const GET = route<Params>(async (req, ctx) => {
  * `regNumber` cannot be changed — it is the login identifier and the unique key.
  */
 export const PATCH = route<Params>(async (req, ctx) => {
-  const { db, session } = await requireSchoolScope(req)
+  const context = await requireSchoolScope(req)
+  const { db, session } = context
 
   if (!canManageSchool(session.role)) {
     throw forbidden('Only a school administrator can modify the student roster.')
@@ -64,28 +65,8 @@ export const PATCH = route<Params>(async (req, ctx) => {
   const studentId = parseParam((await ctx.params).studentId, 'studentId')
   const input = await readJson(req, updateStudentSchema)
 
-  const student = await resolveStudent(db, studentId)
-
-  /**
-   * A class-level change mid-exam would strand the student: `/start` and the resume
-   * route both require `student.classLevel === exam.classLevel`, so an open session
-   * for the old level becomes unresumable and the attempt is lost. Blocked rather
-   * than silently breaking it — the admin can promote them once the exam is in.
-   */
-  if (input.classLevel && input.classLevel !== student.classLevel) {
-    const openSession = await db.examSession.findFirst({
-      where: { studentId, status: 'IN_PROGRESS' },
-      select: { id: true, exam: { select: { title: true } } },
-    })
-    if (openSession) {
-      throw conflict(
-        `This student has an exam in progress ("${openSession.exam.title}"). Changing their class level now would make that session unresumable. Wait for it to be submitted.`,
-      )
-    }
-  }
-
-  const result = await db.student.updateMany({ where: { id: studentId }, data: input })
-  assertAffected(result, 'Student not found.')
+  // The service retains the open-exam guard and updates placement + class in one transaction.
+  await updateRosterStudent(context, studentId, input)
 
   const updated = await db.student.findFirstOrThrow({
     where: { id: studentId },

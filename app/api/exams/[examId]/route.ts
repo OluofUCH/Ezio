@@ -4,6 +4,7 @@ import { requireSchoolScope } from '@/lib/auth/session'
 import { assertAffected, resolveExamWithCounts } from '@/lib/tenant'
 import { parseParam } from '@/lib/validation/common'
 import { updateExamSchema } from '@/lib/validation/exam'
+import { updateLegacyExam } from '@/src/modules/school-setup/legacy-exams'
 
 export const runtime = 'nodejs'
 
@@ -64,35 +65,11 @@ export const GET = route<Params>(async (req, ctx) => {
  * who no longer qualify.
  */
 export const PATCH = route<Params>(async (req, ctx) => {
-  const { db } = await requireSchoolScope(req)
+  const context = await requireSchoolScope(req)
   const examId = parseParam((await ctx.params).examId, 'examId')
   const input = await readJson(req, updateExamSchema)
 
-  const exam = await resolveExamWithCounts(db, examId)
-  const hasSessions = exam._count.examSessions > 0
-
-  if (hasSessions) {
-    const frozen: string[] = []
-    if (input.durationMins !== undefined && input.durationMins !== exam.durationMins) frozen.push('durationMins')
-    if (input.classLevel !== undefined && input.classLevel !== exam.classLevel) frozen.push('classLevel')
-
-    if (frozen.length > 0) {
-      throw conflict(
-        `${exam._count.examSessions} student session(s) already exist for this exam, so ${frozen.join(' and ')} cannot be changed — it would alter the conditions of attempts that have already been graded.`,
-        'EXAM_HAS_SESSIONS',
-      )
-    }
-  }
-
-  const data: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(input)) {
-    if (value !== undefined) data[key] = value
-  }
-
-  const result = await db.exam.updateMany({ where: { id: examId }, data })
-  assertAffected(result, 'Exam not found.')
-
-  const updated = await db.exam.findFirstOrThrow({ where: { id: examId }, select: EXAM_SELECT })
+  const updated = await updateLegacyExam(context, examId, input, EXAM_SELECT)
   return ok({ exam: updated })
 })
 

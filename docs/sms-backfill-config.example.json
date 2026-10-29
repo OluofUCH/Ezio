@@ -1,0 +1,24 @@
+{
+  "schoolId": "<school ID from pnpm sms:inventory>",
+  "session": {
+    "name": "<approved current academic session, e.g. 2026/2027>",
+    "startDate": "YYYY-MM-DD",
+    "endDate": "YYYY-MM-DD"
+  },
+  "defaultArms": {
+    "JSS1": "<default arm name>",
+    "JSS2": "<default arm name>",
+    "JSS3": "<default arm name>",
+    "SS1": "<default arm name>",
+    "SS2": "<default arm name>",
+    "SS3": "<default arm name>"
+  },
+  "arms": {
+    "JSS1": ["A", "B", "C"],
+    "JSS2": ["A", "B", "C"],
+    "JSS3": ["A", "B", "C"],
+    "SS1": ["A", "B", "C"],
+    "SS2": ["A", "B", "C"],
+    "SS3": ["A", "B", "C"]
+  }
+}

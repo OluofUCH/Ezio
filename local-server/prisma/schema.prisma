@@ -19,6 +19,9 @@
 
 generator client {
   provider = "prisma-client-js"
+  // A private output prevents pnpm's shared @prisma/client package from mixing
+  // this SQLite client with the cloud's PostgreSQL client.
+  output   = "../generated/client"
 }
 
 datasource db {

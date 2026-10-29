@@ -1,5 +1,7 @@
+import { Prisma } from '@prisma/client'
 import { unscopedDb } from '@/lib/db'
 import { ApiError, notFound } from '@/lib/errors'
+import { scopeTenantArgs } from '@/lib/tenant-policy'
 
 /**
  * TENANT ISOLATION
@@ -7,8 +9,9 @@ import { ApiError, notFound } from '@/lib/errors'
  *
  * PRD §4.1 requires isolation "enforced at the query layer — every DB call scoped
  * by the authenticated user/student's schoolId". This module is that enforcement.
- * `schoolId` always arrives from a verified JWT; it is never read from a request
- * body, query string, or path parameter by anything below.
+ * `schoolId` arrives from authenticated staff/student/device scope. Trusted
+ * bootstrap/backfill commands select an explicit operator-owned scope instead.
+ * Nothing below reads a request body, query string or path parameter.
  *
  * Two mechanisms, because Prisma's write API cannot carry relation filters:
  *
@@ -25,66 +28,23 @@ import { ApiError, notFound } from '@/lib/errors'
  *     turns check-then-write into one atomic compare-and-set.
  */
 
-/** Models carrying `schoolId` directly — scopable with a scalar filter. */
-const DIRECT_MODELS = new Set(['User', 'Student', 'Exam', 'LocalServer'])
-
-/**
- * Models that reach their school through a relation, and the path to it.
- *
- * Typed as a plain object rather than `Prisma.InputJsonValue`: these are merged into a
- * `where` with object spread below, and `InputJsonValue` admits primitives, so a JSON
- * type here makes the spread unsound. `Record<string, unknown>` is the honest shape —
- * Prisma's own filter types can't describe "a where fragment for an unknown model".
- */
-const RELATION_PATHS: Record<string, (schoolId: string) => Record<string, unknown>> = {
-  Question: (schoolId) => ({ exam: { schoolId } }),
-  Option: (schoolId) => ({ question: { exam: { schoolId } } }),
-  ExamSession: (schoolId) => ({ exam: { schoolId } }),
-  Answer: (schoolId) => ({ examSession: { exam: { schoolId } } }),
-}
-
-/**
- * `Answer` is exempt from the unique-write block. Its unique key is
- * (examSessionId, questionId), and `examSessionId` can only have come from
- * `resolveSession()` — so the tenant scope is inherited from an already-verified
- * parent and re-deriving it would be theatre.
- */
-const UNIQUE_WRITE_EXEMPT = new Set(['Answer'])
-
-/** Operations whose `where` accepts arbitrary filters, including relations. */
-const FILTERABLE_OPS = new Set([
-  'findFirst',
-  'findFirstOrThrow',
-  'findMany',
-  'count',
-  'aggregate',
-  'groupBy',
-  'updateMany',
-  'deleteMany',
-])
-
-/** Operations requiring a unique `where` — scalar filters only. */
-const UNIQUE_OPS = new Set(['findUnique', 'findUniqueOrThrow', 'update', 'delete', 'upsert'])
-
-const CREATE_OPS = new Set(['create', 'createMany', 'upsert'])
-
-function misuse(model: string, operation: string): ApiError {
-  const isRead = operation.startsWith('find')
-  const advice = isRead
-    ? `use \`${model.charAt(0).toLowerCase() + model.slice(1)}.findFirst({ where: { id } })\`, which is scoped automatically, or a resolve* helper from lib/tenant.ts`
-    : `use \`${operation === 'delete' ? 'deleteMany' : 'updateMany'}({ where: { id }, ... })\` + \`assertAffected()\`, which is scoped automatically and atomic`
-
-  return new ApiError(
-    500,
-    'CONFIGURATION_ERROR',
-    `Tenant safety: ${model}.${operation}() cannot be tenant-scoped, because ${model} reaches its school through a relation and a unique \`where\` accepts only scalar filters. Instead, ${advice}.`,
-  )
+// Derive direct scope from Prisma's schema, so adding a schoolId-bearing model
+// cannot silently omit it from a hand-maintained registry. Unknown/global models
+// and raw operations fail closed on this client.
+const policy = {
+  direct: new Set(Prisma.dmmf.datamodel.models
+    .filter((model) => model.fields.some((field) => field.name === 'schoolId' && field.kind === 'scalar'))
+    .map((model) => model.name)),
+  relations: new Map(Prisma.dmmf.datamodel.models.map((model) => [
+    model.name,
+    new Set(model.fields.filter((field) => field.kind === 'object').map((field) => field.name)),
+  ])),
 }
 
 /**
  * Returns a Prisma client permanently scoped to one school.
  *
- * @param schoolId Always from a verified session token — never from user input.
+ * @param schoolId Verified request scope, or an explicit trusted bootstrap scope.
  */
 export function tenantClient(schoolId: string) {
   if (!schoolId) {
@@ -94,53 +54,9 @@ export function tenantClient(schoolId: string) {
   return unscopedDb.$extends({
     name: `tenant:${schoolId}`,
     query: {
-      $allModels: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async $allOperations({ model, operation, args, query }: any) {
-          const isDirect = DIRECT_MODELS.has(model)
-          const relationPath = RELATION_PATHS[model]
-          const isSchool = model === 'School'
-
-          // Models with no tenant dimension pass through untouched.
-          if (!isDirect && !relationPath && !isSchool) return query(args)
-
-          const tenantFilter = isDirect
-            ? { schoolId }
-            : isSchool
-              ? { id: schoolId }
-              : relationPath!(schoolId)
-
-          if (FILTERABLE_OPS.has(operation)) {
-            // AND-composition, not object spread: a caller-supplied `where` may
-            // contain OR/NOT branches, and merging by key would let
-            // `where: { schoolId: <other> }` silently replace the tenant filter.
-            // Under AND both must hold, so the scope is unconditional.
-            args.where = args.where ? { AND: [args.where, tenantFilter] } : tenantFilter
-          } else if (UNIQUE_OPS.has(operation)) {
-            if (isDirect || isSchool) {
-              // Prisma's extended-unique-where permits extra scalar filters
-              // alongside the unique field, but the unique field must stay at the
-              // top level — so this merge is flat rather than AND-wrapped.
-              // tenantFilter goes last so it always wins a key collision.
-              args.where = { ...(args.where ?? {}), ...tenantFilter }
-            } else if (!UNIQUE_WRITE_EXEMPT.has(model)) {
-              throw misuse(model, operation)
-            }
-          }
-
-          // Stamp schoolId onto writes so a create can't land in another tenant.
-          if (CREATE_OPS.has(operation) && isDirect) {
-            if (operation === 'upsert' && args.create) {
-              args.create = { ...args.create, ...tenantFilter }
-            } else if (Array.isArray(args.data)) {
-              args.data = args.data.map((row: object) => ({ ...row, ...tenantFilter }))
-            } else if (args.data) {
-              args.data = { ...args.data, ...tenantFilter }
-            }
-          }
-
-          return query(args)
-        },
+      async $allOperations({ model, operation, args, query }) {
+        scopeTenantArgs(schoolId, model, operation, args as Record<string, unknown>, policy)
+        return query(args)
       },
     },
   })

@@ -95,9 +95,10 @@ export type ScopedStaffContext = {
  *
  * SUPER_ADMIN is the single exception: having no school of their own, they must
  * name one with `?schoolId=`. That is the *only* place in the codebase where a
- * school id is read from a request, and it is safe precisely because the role it
+ * school id is read for CBT scope, and it is safe precisely because the role it
  * is gated behind already has platform-wide access — it selects a scope rather
  * than escaping one.
+ * SMS data routes use their separate signed school-selection context.
  */
 export async function requireSchoolScope(
   req: NextRequest,

@@ -5,6 +5,7 @@ import { generatePin } from '@/lib/auth/pin'
 import { forbidden } from '@/lib/errors'
 import { pageMeta, paginate } from '@/lib/validation/common'
 import { createStudentSchema, listStudentsSchema } from '@/lib/validation/student'
+import { createRosterStudents } from '@/src/modules/students/service'
 
 export const runtime = 'nodejs'
 
@@ -71,7 +72,8 @@ export const GET = route(async (req) => {
  * `POST /api/students/import` instead.
  */
 export const POST = route(async (req) => {
-  const { db, session } = await requireSchoolScope(req)
+  const context = await requireSchoolScope(req)
+  const { db, session } = context
 
   if (!canManageSchool(session.role)) {
     throw forbidden('Only a school administrator can add students to the roster.')
@@ -95,14 +97,9 @@ export const POST = route(async (req) => {
 
   const pin = input.pin ?? generatePin()
 
-  const student = await db.student.create({
-    // schoolId is injected by the tenant extension — see lib/tenant.ts.
-    data: {
-      regNumber: input.regNumber,
-      fullName: input.fullName,
-      classLevel: input.classLevel,
-      pin,
-    } as never,
+  await createRosterStudents(context, [{ ...input, pin }])
+  const student = await db.student.findFirstOrThrow({
+    where: { regNumber: input.regNumber },
     select: studentSelect(true),
   })
 

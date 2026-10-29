@@ -26,11 +26,13 @@ export const GET = route(async (req) => {
     select: { id: true, classLevel: true, fullName: true },
   })
   if (!student) throw notFound('Student record not found.')
+  const withdrawn = await db.enrollment.findFirst({ where: { studentId: student.id, isCurrent: true, status: 'WITHDRAWN' }, select: { id: true } })
 
   const exams = await db.exam.findMany({
     where: {
       classLevel: student.classLevel,
       isPublished: true,
+      ...(withdrawn ? { id: { in: [] as string[] } } : {}),
       // Note: no window filter here. An exam outside its window is still listed, with
       // a state of NOT_YET_OPEN or CLOSED — a student needs to see that tomorrow's
       // exam exists, and silently omitting a closed one looks like a system fault.

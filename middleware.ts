@@ -28,8 +28,8 @@ export function middleware(req: NextRequest) {
   // `/exam/*` is the runner. It sits outside `/student` so it renders without the
   // navigation shell — a student mid-paper should have nowhere to click away to — but
   // it is a student surface and guarded by the same cookie.
-  const isStudentArea = pathname.startsWith('/student') || pathname.startsWith('/exam')
-  const isStaffArea = pathname.startsWith('/staff')
+  const isStudentArea = pathname.startsWith('/student') || pathname.startsWith('/exam') || pathname.startsWith('/sms/student')
+  const isStaffArea = pathname.startsWith('/staff') || pathname.startsWith('/sms/staff')
 
   if (!isStudentArea && !isStaffArea) return NextResponse.next()
 
@@ -51,5 +51,5 @@ export const config = {
    * from `lib/api.ts` — redirecting a fetch to an HTML login page would surface as an
    * unreadable-response error in the client instead of a clear "session expired".
    */
-  matcher: ['/student/:path*', '/exam/:path*', '/staff/:path*'],
+  matcher: ['/student/:path*', '/exam/:path*', '/staff/:path*', '/sms/student/:path*', '/sms/staff/:path*'],
 }

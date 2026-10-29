@@ -57,6 +57,7 @@ export class ApiClientError extends Error {
 
 type RequestOptions = {
   signal?: AbortSignal
+  headers?: Record<string, string>
   /** Suppress the redirect-on-401 behaviour — used by the session probe itself. */
   allowUnauthenticated?: boolean
 }
@@ -67,12 +68,13 @@ async function request<T>(
   body?: unknown,
   options: RequestOptions = {},
 ): Promise<T> {
+  const headers: Record<string, string> = { ...options.headers }
   const init: RequestInit = {
     method,
     // Same-origin cookies (`cbt_staff` / `cbt_student`) carry the session.
     credentials: 'same-origin',
     signal: options.signal,
-    headers: {},
+    headers,
   }
 
   if (body instanceof FormData) {
@@ -80,7 +82,7 @@ async function request<T>(
     // omits it and the server's `readUpload` then fails to parse the form.
     init.body = body
   } else if (body !== undefined) {
-    init.headers = { 'content-type': 'application/json' }
+    headers['content-type'] = 'application/json'
     init.body = JSON.stringify(body)
   }
 

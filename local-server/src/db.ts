@@ -1,15 +1,13 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '#local-prisma'
 import { databaseUrl, ensureDataDir } from '@local/config'
 
 /**
  * The LocalServer's own Prisma client, bound to the SQLite file in `.env`.
  *
- * Resolves to `local-server/node_modules/@prisma/client` — the client generated from
- * `local-server/prisma/schema.prisma`, NOT the cloud's Postgres client. The two packages
- * happen to share a name, which is exactly why nothing under `../lib` that this server
- * imports may reference `@prisma/client` at runtime: from here that specifier means the
- * SQLite client, whose generated types are different (no enums, JSON as text). The
- * portable modules in `../lib/core` exist to keep that boundary honest.
+ * `#local-prisma` resolves to this package's private generated SQLite client, both
+ * from source and in the installer. Dependency-manager hoisting cannot substitute
+ * the cloud's PostgreSQL client. Shared modules in `../lib/core` remain portable
+ * and must not import either generated client at runtime.
  *
  * A single instance, unlike the cloud's hot-reload guard in lib/db.ts — this is a
  * long-lived process started once from the command line, so there is no reload cycle to

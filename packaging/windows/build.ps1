@@ -37,17 +37,17 @@ $null = New-Item -ItemType Directory -Path $cache -Force
 Push-Location $localServer
 try {
   Write-Host "`n[1/6] Installing dependencies and generating Prisma client..." -ForegroundColor Yellow
-  npm install
-  if ($LASTEXITCODE -ne 0) { throw 'npm install failed.' }
-  npx prisma generate
+  pnpm install --frozen-lockfile --ignore-scripts
+  if ($LASTEXITCODE -ne 0) { throw 'pnpm install failed.' }
+  pnpm exec prisma generate
   if ($LASTEXITCODE -ne 0) { throw 'prisma generate failed.' }
 
   Write-Host "`n[2/6] Building student/admin web UI..." -ForegroundColor Yellow
-  npm run build:web
+  pnpm run build:web
   if ($LASTEXITCODE -ne 0) { throw 'Web build failed.' }
 
   Write-Host "`n[3/6] Building server bundle..." -ForegroundColor Yellow
-  npm run build:server
+  pnpm run build:server
   if ($LASTEXITCODE -ne 0) { throw 'Server build failed.' }
 }
 finally {
@@ -60,14 +60,10 @@ $null = New-Item -ItemType Directory -Path $appDir
 Copy-Item -LiteralPath (Join-Path $localServer 'dist') -Destination $appDir -Recurse
 Copy-Item -LiteralPath (Join-Path $localServer 'prisma') -Destination $appDir -Recurse
 Copy-Item -LiteralPath (Join-Path $localServer 'package.json') -Destination $appDir
-# The server is bundled by esbuild, so only Prisma (which cannot be bundled) is
-# needed at runtime. Copying all of node_modules pulled in Vite, TypeScript and
-# hundreds of dev-only packages, bloating the installer and making Inno Setup
-# spend minutes compressing source maps.
-$appNodeModules = Join-Path $appDir 'node_modules'
-$null = New-Item -ItemType Directory -Path (Join-Path $appNodeModules '@prisma') -Force
-Copy-Item -LiteralPath (Join-Path $localServer 'node_modules\@prisma\client') -Destination (Join-Path $appNodeModules '@prisma') -Recurse
-Copy-Item -LiteralPath (Join-Path $localServer 'node_modules\.prisma') -Destination $appNodeModules -Recurse
+# This package's private SQLite client includes its runtime and query engine.
+# Do not copy through pnpm's @prisma/client symlink: the cloud also uses that
+# package, with a different schema. #local-prisma resolves relative to package.json.
+Copy-Item -LiteralPath (Join-Path $localServer 'generated') -Destination $appDir -Recurse
 
 Write-Host "`n[5/6] Downloading Node runtime and WinSW..." -ForegroundColor Yellow
 $nodeDir = Join-Path $stage 'node'
@@ -121,7 +117,7 @@ $previousDb = $env:LOCAL_DATABASE_URL
 $env:LOCAL_DATABASE_URL = "file:$seedDb"
 Push-Location $localServer
 try {
-  npx tsx src/cli/migrate.ts
+  pnpm exec tsx src/cli/migrate.ts
   if ($LASTEXITCODE -ne 0) { throw 'Could not create the seed database.' }
 }
 finally {

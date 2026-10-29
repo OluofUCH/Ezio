@@ -66,11 +66,11 @@ port-forward it or expose it to the internet.
 ```bash
 cd local-server
 cp .env.example .env      # set CLOUD_BASE_URL and CLOUD_DEVICE_KEY
-npm install
-npm run setup             # generates the client and creates exam-hall.db
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run setup             # generates the private SQLite client and creates exam-hall.db
 ```
 
-`npm run setup` applies the migrations in `local-server/prisma/migrations`. A database
+`pnpm run setup` applies the migrations in `local-server/prisma/migrations`. A database
 created by an older release with `prisma db push` is baselined automatically the first
 time the new server starts, so an existing hall machine does not need to be reset. The cloud is
 the system of record — with one exception, covered in step 5.
@@ -91,7 +91,7 @@ section.
 When running from source, use:
 
 ```bash
-npm run pull -- --exam=<examId>
+pnpm run pull --exam=<examId>
 ```
 
 This downloads the exam, its questions, **the answer key**, and the roster for that exam's
@@ -111,7 +111,7 @@ The Windows service starts automatically when the hall PC boots. Open
 When running from source, start it with:
 
 ```bash
-npm run serve
+pnpm run serve
 ```
 
 It prints the LAN addresses to give students:
@@ -149,7 +149,7 @@ reimaging, or retiring the PC.
 When running from source, use:
 
 ```bash
-npm run push
+pnpm run push
 ```
 
 This first closes any sitting whose time expired but whose machine was switched off
@@ -172,10 +172,10 @@ not change the outcome.
 Check what is still owed at any time:
 
 ```bash
-npm run status
+pnpm run status
 ```
 
-> **Never wipe or re-image a hall machine while `npm run status` reports sittings awaiting
+> **Never wipe or re-image a hall machine while `pnpm run status` reports sittings awaiting
 > upload.** Those results exist nowhere else. Everything else on the device is a copy the
 > cloud can regenerate.
 
@@ -215,17 +215,17 @@ What follows from that:
 
 ```bash
 # cloud
-npm run db:seed        # also provisions a demo "Exam Hall A" with a fixed dev key
-npm run dev
-npm run smoke          # M1 regression
-npm run smoke-sync     # M2: provisioning, pull, push, re-grading, idempotency
+pnpm run db:seed        # also provisions a demo "Exam Hall A" with a fixed dev key
+pnpm run dev
+pnpm run smoke          # M1 regression
+pnpm run smoke-sync     # M2: provisioning, pull, push, re-grading, idempotency
 
 # hall machine
-cd local-server && npm run setup
-npm run pull -- --exam=<examId>
-npm run serve
-npm run push
-npm run status         # should report everything synced
+pnpm --dir local-server run setup
+pnpm --dir local-server run pull --exam=<examId>
+pnpm --dir local-server run serve
+pnpm --dir local-server run push
+pnpm --dir local-server run status         # should report everything synced
 ```
 
 `smoke-sync` simulates a device over HTTP and asserts the guarantees this document relies on,
@@ -246,7 +246,7 @@ duplicate.
 | `401` on pull/push | Key wrong, rotated, or the device was deactivated. Rotate and update `.env`. |
 | `EXAM_NOT_PUBLISHED` | Publish the exam first. |
 | Pull refused, mode `ONLINE` | Change the exam's mode to `OFFLINE_LAN` or `HYBRID`. |
-| Pull refuses: unpushed results | Run `npm run push` first — re-staging could invalidate them. |
+| Pull refuses: unpushed results | Run `pnpm run push` first — re-staging could invalidate them. |
 | Students can't reach the server | Same Wi-Fi/subnet? Try `/api/health` from a device. Check the host firewall on the port. |
 | Push says `REJECTED: ... outdated copy of the paper` | The exam was edited after staging. The sitting needs manual review; its answers no longer match the cloud's questions. |
 | Clock warning on pull | Fix the machine's system clock before exam day — it governs every deadline offline. |

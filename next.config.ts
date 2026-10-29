@@ -33,13 +33,16 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // pnpm's cloud/LAN lockfiles must not make Next trace an unrelated parent project.
+  outputFileTracingRoot: process.cwd(),
 
   // Avoid advertising the framework version.
   poweredByHeader: false,
 
   // SheetJS ships a CommonJS bundle that must not be traced/bundled by Turbopack
   // or webpack - leaving it external keeps `require` working inside the Node runtime.
-  serverExternalPackages: ['xlsx', '@prisma/client'],
+  serverExternalPackages: ['xlsx', '@prisma/client', 'sharp', 'pdf-lib', '@pdf-lib/fontkit'],
+  outputFileTracingIncludes: { '/api/sms/**': ['./node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf'] },
 
   // Never leak stack traces or Prisma error internals to a client in production.
   // `lib/api.ts` handles the actual sanitising; this only stops the dev overlay

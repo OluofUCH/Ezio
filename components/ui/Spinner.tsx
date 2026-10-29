@@ -1,12 +1,13 @@
-type SpinnerProps = { size?: number; className?: string; label?: string }
+type SpinnerProps = { size?: number; className?: string; label?: string; decorative?: boolean }
 
-export function Spinner({ size = 20, className = '', label }: SpinnerProps) {
+export function Spinner({ size = 20, className = '', label, decorative = false }: SpinnerProps) {
   return (
     <span
-      className={`inline-block animate-spin rounded-full border-2 border-current border-t-transparent align-[-2px] ${className}`}
+      className={`inline-block rounded-full border-2 border-current border-t-transparent align-[-2px] motion-safe:animate-spin ${className}`}
       style={{ width: size, height: size }}
-      role="status"
-      aria-label={label ?? 'Loading'}
+      role={decorative ? undefined : 'status'}
+      aria-hidden={decorative || undefined}
+      aria-label={decorative ? undefined : (label ?? 'Loading')}
     />
   )
 }
