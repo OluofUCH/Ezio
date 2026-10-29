@@ -23,7 +23,7 @@ const STUDENT_COOKIE = 'cbt_student'
  * area checks only its own cookie rather than "any session".
  */
 export function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl
+  const { pathname } = req.nextUrl
 
   // `/exam/*` is the runner. It sits outside `/student` so it renders without the
   // navigation shell — a student mid-paper should have nowhere to click away to — but
@@ -37,9 +37,8 @@ export function middleware(req: NextRequest) {
   if (req.cookies.get(cookieName)?.value) return NextResponse.next()
 
   const login = new URL('/login', req.url)
-  // Carry the intended destination so login can return them to it, and preselect the
-  // right tab — a student bounced off /student should not land on the staff form.
-  login.searchParams.set('next', `${pathname}${search}`)
+  // Preselect the correct credentials. Successful sign-in always opens SMS;
+  // users can return to their exams from the CBT module after authentication.
   login.searchParams.set('as', isStudentArea ? 'student' : 'staff')
 
   return NextResponse.redirect(login)

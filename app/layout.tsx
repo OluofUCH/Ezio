@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     template: "%s · Ezio Nigeria",
   },
   description:
-    "Computer-based testing for Nigerian secondary schools — online and offline over a school LAN.",
+    "School management for Nigerian secondary schools, with attendance, report cards, and online or offline computer-based testing.",
 };
 
 export const viewport: Viewport = {

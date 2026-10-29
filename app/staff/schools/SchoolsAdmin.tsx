@@ -15,21 +15,35 @@ import type { CreatedSchool, SchoolList } from '@/lib/client/types'
 /**
  * Tenant administration — SUPER_ADMIN only (`requireSuperAdmin`).
  *
- * Doubles as the school picker. A platform admin has no school of their own, so every
- * school-scoped page needs them to choose one first; selecting here is what fills in the
- * `?schoolId=` that `requireSchoolScope` demands of their role.
+ * Opening a school sets the shared signed SMS selection before entering its dashboard.
+ * CBT receives that same selection from the authenticated shell.
  */
 export function SchoolsAdmin() {
   const router = useRouter()
-  const { isSuperAdmin, schoolId, setActiveSchool } = useScope()
+  const { isSuperAdmin, schoolId } = useScope()
 
   const [search, setSearch] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [openingId, setOpeningId] = useState<string | null>(null)
+  const [selectionError, setSelectionError] = useState<string | null>(null)
 
   const { data, error, loading, refetch } = useApi<SchoolList>(
     `/api/schools${query({ pageSize: 100, search: search.trim() || undefined })}`,
   )
+
+  async function openSchool(id: string) {
+    setOpeningId(id)
+    setSelectionError(null)
+    try {
+      await api.post('/api/sms/staff/school-context', { schoolId: id })
+      router.push('/sms/staff')
+      router.refresh()
+    } catch (error) {
+      setSelectionError(errorMessage(error))
+      setOpeningId(null)
+    }
+  }
 
   if (!isSuperAdmin) {
     return (
@@ -62,6 +76,8 @@ export function SchoolsAdmin() {
           {notice}
         </Alert>
       ) : null}
+
+      {selectionError ? <Alert tone="danger">{selectionError}</Alert> : null}
 
       <div className="card p-4">
         <div className="relative">
@@ -134,14 +150,12 @@ export function SchoolsAdmin() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setActiveSchool(school.id, school.name)
-                    router.push('/staff')
-                  }}
+                  onClick={() => void openSchool(school.id)}
+                  disabled={openingId !== null}
                   className="btn-primary mt-4 w-full"
                 >
                   <Icon name="login" size={20} />
-                  {active ? 'Continue in this school' : 'Work in this school'}
+                  {openingId === school.id ? 'Opening school…' : active ? 'Continue in this school' : 'Work in this school'}
                 </button>
               </div>
             )

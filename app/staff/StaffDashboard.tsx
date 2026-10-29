@@ -61,7 +61,7 @@ function DashboardBody() {
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <h1 className="font-headline-lg text-headline-lg-mobile text-on-surface md:text-headline-lg">
-            {admin ? 'School overview' : 'Teacher dashboard'}
+            CBT overview
           </h1>
           <p className="mt-1 font-body-md text-body-md text-on-surface-variant">
             {admin

@@ -1,14 +1,8 @@
 import { redirect } from 'next/navigation'
-import { AppShell, type NavItem } from '@/components/shell/AppShell'
+import { AppShell } from '@/components/shell/AppShell'
 import { classLevelLabel } from '@/lib/client/format'
 import { getStudentContext } from '@/lib/auth/rsc'
-
-const STUDENT_NAV: NavItem[] = [
-  { href: '/student', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/student/exams', label: 'My Exams', icon: 'quiz' },
-  { href: '/student/results', label: 'Results', icon: 'assessment' },
-  { href: '/sms/student', label: 'School records', icon: 'school' },
-]
+import { portalNavigation } from '@/src/modules/shared/navigation'
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const context = await getStudentContext()
@@ -25,7 +19,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <AppShell
-      nav={STUDENT_NAV}
+      nav={portalNavigation('STUDENT')}
       portalLabel={school.name}
       userName={student.fullName}
       userMeta={`${student.regNumber} · ${classLevelLabel(student.classLevel)}`}

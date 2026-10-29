@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { ApiClientError, api, errorMessage } from "@/lib/client/api";
 import type { StaffLoginResult, StudentLoginResult } from "@/lib/client/types";
+import { portalHome } from "@/src/modules/shared/navigation";
 
 type Tab = "student" | "staff";
 
@@ -15,10 +16,8 @@ const SLUG_KEY = "Ezio:school-slug";
 
 export function LoginForm({
   initialTab,
-  nextPath,
 }: {
   initialTab: Tab;
-  nextPath: string | null;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(initialTab);
@@ -74,7 +73,7 @@ export function LoginForm({
           /* non-fatal */
         }
 
-        router.replace(nextPath ?? "/student");
+        router.replace(portalHome("STUDENT"));
       } else {
         const result = await api.post<StaffLoginResult>(
           "/api/auth/staff/login",
@@ -84,14 +83,9 @@ export function LoginForm({
           },
         );
 
-        // SUPER_ADMIN has no school of their own; every school-scoped staff route needs
-        // an explicit ?schoolId=, so they get the school picker rather than a dashboard
-        // that would 403 on load.
-        const destination =
-          nextPath ??
-          (result.user.role === "SUPER_ADMIN" ? "/staff/schools" : "/staff");
-
-        router.replace(destination);
+        // The SMS dashboard includes school selection for Super Admin. Every staff
+        // role starts here and opens CBT from the shared workspace navigation.
+        router.replace(portalHome(result.user.role));
       }
 
       // Drops the router cache so the authenticated shell re-renders with the new session.
@@ -111,7 +105,7 @@ export function LoginForm({
         Welcome back
       </h1>
       <p className="mb-8 mt-2 font-body-md text-body-md text-on-surface-variant">
-        Log in to continue to your dashboard.
+        Sign in to your school portal.
       </p>
 
       <div
@@ -164,7 +158,7 @@ export function LoginForm({
             />
             <Field
               id="pin"
-              label="Examination PIN"
+              label="PIN"
               icon="dialpad"
               type="password"
               value={pin}
@@ -211,11 +205,7 @@ export function LoginForm({
           className="btn-primary mt-2 w-full py-3"
         >
           {busy ? <Spinner size={20} /> : null}
-          {busy
-            ? "Signing in…"
-            : tab === "student"
-              ? "Access exam dashboard"
-              : "Sign in"}
+          {busy ? "Signing in…" : "Sign in"}
         </button>
       </form>
 

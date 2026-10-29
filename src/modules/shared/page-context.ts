@@ -25,7 +25,7 @@ export const getSmsStaffPageContext = cache(async () => {
 
 export const getSmsPageContext = cache(async () => {
   const context = await getSmsStaffPageContext()
-  if (context.user.role === 'TEACHER') redirect('/staff')
+  if (context.user.role === 'TEACHER') redirect('/sms/staff')
   return context
 })
 

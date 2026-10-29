@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { api, errorMessage } from "@/lib/client/api";
-
-export type NavItem = { href: string; label: string; icon: string };
+import { isNavLinkActive, type NavGroup, type NavItem, type NavLink } from "@/src/modules/shared/navigation";
 
 type AppShellProps = {
   nav: NavItem[];
@@ -57,7 +56,8 @@ export function AppShell({
     const previous = document.activeElement;
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const focusable = () => Array.from(drawerRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? []);
+    const focusable = () => Array.from(drawerRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled])') ?? [])
+      .filter((element) => element.getClientRects().length > 0);
     focusable()[0]?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -107,33 +107,17 @@ export function AppShell({
     }
   }
 
-  const isActive = (href: string) =>
-    pathname === href || (pathname.startsWith(`${href}/`) && !["/", "/sms/staff", "/sms/student"].includes(href));
-
   const navLinks = (
-    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto custom-scrollbar">
-      {nav.map((item) => {
-        const active = isActive(item.href);
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            aria-current={active ? "page" : undefined}
-            className={
-              active
-                 ? "flex items-center gap-3 rounded-lg border-l-4 border-primary-container bg-primary-container/20 px-4 py-3 font-label-md text-label-md font-bold text-on-surface transition-colors motion-safe:active:scale-[0.98]"
-                 : "flex items-center gap-3 rounded-lg px-4 py-3 font-label-md text-label-md text-on-surface-variant transition-colors hover:bg-surface-container-low hover:text-on-surface motion-safe:active:scale-[0.98]"
-            }
-          >
-            <Icon
-              name={item.icon}
-              filled={active}
-              className={active ? "text-primary" : "text-on-surface-variant"}
-            />
-            {item.label}
-          </Link>
-        );
-      })}
+    <nav aria-label="Main navigation" className="min-h-0 flex-1 overflow-y-auto custom-scrollbar">
+      <ul className="space-y-1">
+        {nav.map((item) => (
+          <li key={"children" in item ? item.id : item.href}>
+            {"children" in item
+              ? <NavigationGroup item={item} pathname={pathname} />
+              : <NavigationLink item={item} pathname={pathname} />}
+          </li>
+        ))}
+      </ul>
     </nav>
   );
 
@@ -257,6 +241,39 @@ export function AppShell({
           <div className="mx-auto w-full max-w-container-max">{children}</div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function NavigationLink({ item, pathname }: { item: NavLink; pathname: string }) {
+  const active = isNavLinkActive(pathname, item);
+  return (
+    <Link href={item.href} aria-current={active ? "page" : undefined}
+      className={`flex min-h-11 items-center gap-3 rounded-lg px-4 py-3 font-label-md text-label-md transition-colors motion-safe:active:scale-[0.98] ${active
+        ? "border-s-4 border-primary-container bg-primary-container/20 font-bold text-on-surface"
+        : "text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface"}`}>
+      <Icon name={item.icon} filled={active} className={`shrink-0 ${active ? "text-primary" : "text-on-surface-variant"}`} />
+      <span className="min-w-0 break-words">{item.label}</span>
+    </Link>
+  );
+}
+
+function NavigationGroup({ item, pathname }: { item: NavGroup; pathname: string }) {
+  const id = useId();
+  const active = item.children.some((child) => isNavLinkActive(pathname, child));
+  const [expanded, setExpanded] = useState(active);
+  useEffect(() => { setExpanded(active); }, [active, pathname]);
+  return (
+    <div>
+      <button type="button" aria-expanded={expanded} aria-controls={id} onClick={() => setExpanded(!expanded)}
+        className={`flex min-h-11 w-full items-center gap-3 rounded-lg px-4 py-3 text-start font-label-md text-label-md transition-colors hover:bg-surface-container-low ${active ? "font-bold text-on-surface" : "text-on-surface-variant"}`}>
+        <Icon name={item.icon} filled={active} className={`shrink-0 ${active ? "text-primary" : "text-on-surface-variant"}`} />
+        <span className="min-w-0 flex-1 break-words">{item.label}</span>
+        <Icon name={expanded ? "expand_less" : "expand_more"} size={20} className="shrink-0" />
+      </button>
+      <ul id={id} hidden={!expanded} className="my-2 ms-4 space-y-1 border-s border-border-subtle ps-2">
+        {item.children.map((child) => <li key={child.href}><NavigationLink item={child} pathname={pathname} /></li>)}
+      </ul>
     </div>
   );
 }

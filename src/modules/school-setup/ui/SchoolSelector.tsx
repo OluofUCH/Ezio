@@ -3,6 +3,7 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +15,7 @@ import { schoolDataPrefix, useSmsWorkspace, type SmsSchool } from '@/src/modules
 type Directory = { schools: SmsSchool[]; meta: PageMeta }
 
 export function SchoolSelector() {
+  const router = useRouter()
   const workspace = useSmsWorkspace()
   const id = useId()
   const trigger = useRef<HTMLButtonElement>(null)
@@ -35,6 +37,8 @@ export function SchoolSelector() {
     onMutate: workspace.beginSelection,
     onSuccess: ({ school }) => {
       workspace.finishSelection(school)
+      // Invalidate prefetched CBT layouts so they receive this same signed selection.
+      router.refresh()
       setNotice(`Selected ${school.name}.`)
       setOpen(false)
       setCandidate('')

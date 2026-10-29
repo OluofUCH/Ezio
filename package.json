@@ -17,6 +17,7 @@
     "test:sms-staff": "tsx --test tests/integration/sms-staff.test.ts",
     "test:sms-complete": "tsx --test tests/integration/sms-complete.test.ts",
     "check:lan-boundary": "node scripts/check-lan-boundary.mjs",
+    "guide:pdf": "node scripts/generate-site-guide.mjs",
     "sms:backfill": "tsx scripts/backfill-sms.ts",
     "sms:backfill-results": "tsx scripts/backfill-sms-results.ts",
     "sms:inventory": "tsx scripts/inventory-sms-rollout.ts",

@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query'
 import { AppShell } from '@/components/shell/AppShell'
 import { ApiClientError, errorMessage } from '@/lib/client/api'
+import { portalNavigation } from '@/src/modules/shared/navigation'
 
 export type SmsSchool = { id: string; name: string; isActive: boolean }
 export type SmsUser = { id: string; fullName: string; email?: string; regNumber?: string; role: 'SUPER_ADMIN' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT' }
@@ -72,31 +73,10 @@ function WorkspaceBody({ user, initialSchool, children }: Props) {
   const value = useMemo(() => ({ user, school, switching, scopeProblem, beginSelection, finishSelection, cancelSelection, reportContextError }),
     [user, school, switching, scopeProblem, beginSelection, finishSelection, cancelSelection, reportContextError])
 
-  const admin = user.role === 'SUPER_ADMIN' || user.role === 'SCHOOL_ADMIN'
-  const nav = user.role === 'STUDENT' ? [
-    { href: '/sms/student', label: 'School records', icon: 'school' },
-    { href: '/student', label: 'CBT dashboard', icon: 'quiz' },
-  ] : [
-    { href: '/sms/staff', label: 'School dashboard', icon: 'dashboard' },
-    ...(admin ? [
-      { href: '/sms/staff/calendar', label: 'Academic calendar', icon: 'calendar_month' },
-      { href: '/sms/staff/classes-subjects', label: 'Classes & subjects', icon: 'category' },
-      { href: '/sms/staff/teachers', label: 'Staff', icon: 'badge' },
-      { href: '/sms/staff/students', label: 'Students', icon: 'group' },
-      { href: '/sms/staff/assessment', label: 'Assessment setup', icon: 'settings' },
-    ] : []),
-    { href: '/sms/staff/attendance', label: 'Attendance', icon: 'fact_check' },
-    { href: '/sms/staff/scores', label: 'Score entry', icon: 'edit_note' },
-    { href: '/sms/staff/reports', label: 'Report cards', icon: 'description' },
-    { href: '/sms/staff/bridge', label: 'Import CBT scores', icon: 'sync' },
-    { href: '/sms/staff/announcements', label: 'Staff notices', icon: 'campaign' },
-    { href: '/staff', label: 'CBT dashboard', icon: 'quiz' },
-    { href: '/staff/account', label: 'My account', icon: 'manage_accounts' },
-  ]
   return (
     <WorkspaceContext.Provider value={value}>
       <AppShell
-        nav={nav}
+        nav={portalNavigation(user.role)}
         portalLabel={school?.name ?? 'School management'}
         userName={user.fullName}
         userMeta={`${user.role.replaceAll('_', ' ')} · ${user.email ?? user.regNumber ?? ''}`}

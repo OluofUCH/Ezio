@@ -22,11 +22,11 @@ export function SchoolGate({ children }: { children: React.ReactNode }) {
       <EmptyState
         icon="apartment"
         title="Choose a school first"
-        description="Your account sits above every tenant, so school data has to be requested for one school at a time. Pick one to continue — you can switch at any point."
+        description="Choose a school on the school dashboard. SMS and CBT use the same selection."
         action={
-          <Link href="/staff/schools" className="btn-primary">
+          <Link href="/sms/staff" className="btn-primary">
             <Icon name="list" size={20} />
-            Browse schools
+            Choose a school
           </Link>
         }
       />
@@ -41,13 +41,13 @@ export function ActiveSchoolBanner() {
   if (!isSuperAdmin || !schoolId) return null
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-secondary-fixed-dim bg-secondary-fixed/40 px-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-secondary-fixed-dim bg-secondary-fixed/40 px-4 py-3">
       <p className="flex items-center gap-2 font-label-md text-label-md text-on-secondary-fixed">
         <Icon name="visibility" size={18} />
         Viewing <strong>{activeSchoolName ?? schoolId}</strong> as platform admin
       </p>
       <Link
-        href="/staff/schools"
+        href="/sms/staff"
         className="shrink-0 font-label-md text-label-md text-on-secondary-fixed underline hover:no-underline"
       >
         Switch school

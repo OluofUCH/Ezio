@@ -4,7 +4,7 @@ import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = { title: "Log in" };
 
-type SearchParams = { next?: string; as?: string };
+type SearchParams = { as?: string };
 
 export default async function LoginPage({
   searchParams,
@@ -14,20 +14,8 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
 
-  /**
-   * `next` comes from the middleware redirect, so it is attacker-influenceable via a
-   * crafted link. Only same-origin absolute paths are honoured — anything starting
-   * `//` or with a scheme is discarded, which is what stops this being an open
-   * redirect that lands a student on a look-alike login page after "signing in".
-   */
-  const requested = params.next ?? "";
-  const safeNext =
-    requested.startsWith("/") &&
-    !requested.startsWith("//") &&
-    !requested.includes(":")
-      ? requested
-      : null;
-
+  // Successful sign-in always opens the role's SMS dashboard. Legacy `next`
+  // parameters cannot bypass that entry point or redirect outside the site.
   const initialTab = params.as === "staff" ? "staff" : "student";
 
   return (
@@ -49,7 +37,7 @@ export default async function LoginPage({
           </span>
         </div>
 
-        <LoginForm initialTab={initialTab} nextPath={safeNext} />
+        <LoginForm initialTab={initialTab} />
       </div>
 
       {/* Right: brand panel. Decorative, so hidden below lg rather than reflowed. */}

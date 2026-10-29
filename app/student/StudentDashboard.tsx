@@ -56,6 +56,7 @@ export function StudentDashboard() {
       <section className="relative overflow-hidden rounded-xl border border-primary-container/25 bg-primary-container/10 p-8">
         <div className="relative z-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
+            <p className="mb-2 text-sm font-semibold text-primary">CBT overview</p>
             <h1 className="font-display-lg text-headline-lg text-on-background md:text-display-lg">
               Hello, <span className="text-on-primary-container">{firstName}</span>
             </h1>
