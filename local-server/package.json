@@ -2,7 +2,7 @@
   "name": "cbt-local-server",
   "version": "0.1.2",
   "private": true,
-  "packageManager": "pnpm@11.12.0",
+  "packageManager": "pnpm@10.34.9",
   "description": "Offline/LAN exam server for the CBT platform — runs in an exam hall, syncs to the cloud",
   "type": "module",
   "imports": {
