@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/Spinner'
 import { api, ApiClientError, errorMessage } from '@/lib/client/api'
 import { CLASS_LEVELS } from '@/lib/core/domain'
+import { classLevelLabel } from '@/lib/client/format'
 import { SMS_CONTEXT_HEADER, smsContextKey } from '@/src/modules/shared/context-key'
 import { structureKey, useSmsWorkspace, type SmsSchool } from '@/src/modules/shared/ui/SmsWorkspace'
 import { createClassArmSchema, createSubjectSchema, type CreateClassArmInput, type CreateSubjectInput } from '../structure-validation'
@@ -82,7 +83,7 @@ export function StructureForm({ kind, school, onDone, onCancel }: Props) {
         <select ref={levelInput} id={`${id}-level`} name="level" required defaultValue="" {...invalid('level')}
           className="min-h-11 w-full min-w-0 rounded-lg border border-outline bg-surface px-3 py-2 text-base text-on-surface focus-visible:[outline:revert] disabled:opacity-50">
           <option value="">Choose a class level</option>
-          {CLASS_LEVELS.map((level) => <option key={level} value={level}>{level}</option>)}
+          {CLASS_LEVELS.map((level) => <option key={level} value={level}>{classLevelLabel(level)}</option>)}
         </select>
         {error('level')}
       </div> : null}

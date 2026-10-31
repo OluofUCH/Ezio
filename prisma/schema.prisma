@@ -16,10 +16,18 @@ datasource db {
 }
 
 // ------------------------------------------------------------
-// CLASS LEVELS (fixed — Nigerian JSS/SSS system)
+// CLASS LEVELS — nursery, primary and secondary
 // ------------------------------------------------------------
 
 enum ClassLevel {
+  NURSERY1
+  NURSERY2
+  PRIMARY1
+  PRIMARY2
+  PRIMARY3
+  PRIMARY4
+  PRIMARY5
+  PRIMARY6
   JSS1
   JSS2
   JSS3
@@ -65,6 +73,10 @@ model School {
   reportCards ReportCard[]
   announcements Announcement[]
   rosterGrants OfflineRosterGrant[]
+  parents Parent[]
+  parentStudents ParentStudent[]
+  parentComments ParentComment[]
+  studentFees StudentFee[]
 
   @@index([slug])
 }
@@ -183,6 +195,8 @@ model User {
   scoresEdited Score[] @relation("ScoreEditor")
   scoreAudits ScoreAuditLog[] @relation("ScoreAuditor")
   announcements Announcement[] @relation("AnnouncementAuthor")
+  parentComments ParentComment[] @relation("CommentTeacher")
+  feeUpdates StudentFee[] @relation("FeeUpdater")
 
   @@unique([schoolId, id])
   @@index([schoolId])
@@ -211,6 +225,8 @@ model Student {
   profile StudentProfile?
   photo StudentPhoto?
   rosterGrants OfflineRosterGrant[]
+  parents ParentStudent[]
+  fees StudentFee[]
 
   @@unique([schoolId, id])
   @@unique([schoolId, regNumber])
@@ -430,6 +446,7 @@ model Term {
   resultSubmissions ResultSubmission[]
   scores Score[]
   reportCards ReportCard[]
+  studentFees StudentFee[]
 
   @@unique([schoolId, id])
   @@unique([schoolId, academicSessionId, name])
@@ -831,4 +848,82 @@ model OfflineRosterGrant {
   student Student @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
   @@unique([schoolId, id])
   @@unique([schoolId, localServerId, examId, studentId], map: "OfflineRosterGrant_scope_key")
+}
+
+// Parents have their own phone/PIN credentials and never receive staff or CBT access.
+model Parent {
+  id String @id @default(cuid())
+  schoolId String
+  fullName String
+  phone String
+  pinHash String
+  isActive Boolean @default(true)
+  authVersion Int @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  children ParentStudent[]
+  @@unique([schoolId, id])
+  @@unique([schoolId, phone])
+}
+
+model ParentStudent {
+  id String @id @default(cuid())
+  schoolId String
+  parentId String
+  studentId String
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  parent Parent @relation(fields: [schoolId, parentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  student Student @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  comments ParentComment[]
+  @@unique([schoolId, id])
+  @@unique([schoolId, parentId, studentId])
+  @@index([schoolId, studentId, isActive])
+}
+
+enum ParentCommentAuthor {
+  PARENT
+  TEACHER
+}
+
+model ParentComment {
+  id String @id @default(cuid())
+  schoolId String
+  parentStudentId String
+  teacherId String
+  author ParentCommentAuthor
+  body String @db.VarChar(2000)
+  createdAt DateTime @default(now())
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  parentStudent ParentStudent @relation(fields: [schoolId, parentStudentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  teacher User @relation("CommentTeacher", fields: [schoolId, teacherId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  @@unique([schoolId, id])
+  @@index([schoolId, parentStudentId, createdAt, id], map: "ParentComment_thread_idx")
+}
+
+enum FeeStatus {
+  OWING
+  PAID
+}
+
+// One record per child and term: an arm transfer must not reset a paid status.
+model StudentFee {
+  id String @id @default(cuid())
+  schoolId String
+  studentId String
+  termId String
+  status FeeStatus @default(OWING)
+  updatedById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student Student @relation(fields: [schoolId, studentId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  term Term @relation(fields: [schoolId, termId], references: [schoolId, id], onDelete: Restrict, onUpdate: Restrict)
+  updatedBy User @relation("FeeUpdater", fields: [updatedById], references: [id], onDelete: Restrict)
+  @@unique([schoolId, id])
+  @@unique([schoolId, studentId, termId])
+  @@index([schoolId, termId, status])
 }

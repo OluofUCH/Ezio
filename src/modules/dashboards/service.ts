@@ -17,6 +17,10 @@ export async function staffLookups(ctx: ScopedStaffContext) {
 }
 
 export async function staffDashboard(ctx: ScopedStaffContext) {
+  const totals = isSchoolAdmin(ctx.session.role) ? await Promise.all([
+    ctx.db.student.count(),
+    ctx.db.user.count({ where: { role: { in: ['SCHOOL_ADMIN', 'TEACHER'] } } }),
+  ]).then(([students, staff]) => ({ students, staff })) : null
   const session = await ctx.db.academicSession.findFirst({ where: { isCurrent: true } })
   const today = new Date().toISOString().slice(0, 10)
   const term = session ? await ctx.db.term.findFirst({ where: { academicSessionId: session.id, startDate: { lte: new Date(today) }, endDate: { gte: new Date(today) } } }) : null
@@ -26,7 +30,7 @@ export async function staffDashboard(ctx: ScopedStaffContext) {
   const formArms = await ctx.db.classArm.findMany({ where: isSchoolAdmin(ctx.session.role) ? {} : { formTeacherId: ctx.session.userId }, select: { id: true, level: true, name: true } })
   const marks = term ? await ctx.db.attendance.findMany({ where: { termId: term.id, ...(isSchoolAdmin(ctx.session.role) ? {} : { enrollment: { classArmId: { in: formArms.map((a) => a.id) } } }) }, select: { status: true } }) : []
   const counts = isSchoolAdmin(ctx.session.role) ? await ctx.db.enrollment.groupBy({ by: ['classArmId'], where: { isCurrent: true, status: 'ACTIVE', ...(session ? { academicSessionId: session.id } : {}) }, _count: { _all: true } }) : []
-  return { session, term, date: today, attendance: attendanceTotals(marks), enrollmentCounts: counts.map((row) => ({ arm: formArms.find((a) => a.id === row.classArmId), count: row._count._all })), work,
+  return { totals, session, term, date: today, attendance: attendanceTotals(marks), enrollmentCounts: counts.map((row) => ({ arm: formArms.find((a) => a.id === row.classArmId), count: row._count._all })), work,
     teacherProgress: [...new Set(work.map((w) => w.teacher.id))].map((id) => ({ teacher: work.find((w) => w.teacher.id === id)!.teacher, expected: work.filter((w) => w.teacher.id === id).length, submitted: work.filter((w) => w.teacher.id === id && w.status !== 'DRAFT').length, approved: work.filter((w) => w.teacher.id === id && ['APPROVED', 'PUBLISHED'].includes(w.status)).length })), formArms }
 }
 

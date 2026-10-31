@@ -1,12 +1,12 @@
 import type { UserRole } from '@/lib/client/types'
 
-export type PortalRole = UserRole | 'STUDENT'
+export type PortalRole = UserRole | 'STUDENT' | 'PARENT'
 export type NavLink = { href: string; label: string; icon: string; exact?: boolean }
 export type NavGroup = { id: string; label: string; icon: string; children: NavLink[] }
 export type NavItem = NavLink | NavGroup
 
 export function portalHome(role: PortalRole) {
-  return role === 'STUDENT' ? '/sms/student' : '/sms/staff'
+  return role === 'PARENT' ? '/sms/parent' : role === 'STUDENT' ? '/sms/student' : '/sms/staff'
 }
 
 export function isNavLinkActive(pathname: string, item: NavLink) {
@@ -15,6 +15,10 @@ export function isNavLinkActive(pathname: string, item: NavLink) {
 
 /** SMS is the shared workspace; CBT is one module inside its navigation. */
 export function portalNavigation(role: PortalRole): NavItem[] {
+  if (role === 'PARENT') return [
+    { href: '/sms/parent', label: 'Child results', icon: 'description', exact: true },
+    { href: '/sms/parent/comments', label: 'Teacher comments', icon: 'forum' },
+  ]
   const home: NavLink = { href: portalHome(role), label: 'School dashboard', icon: 'dashboard', exact: true }
   if (role === 'STUDENT') {
     return [home, {
@@ -45,9 +49,12 @@ export function portalNavigation(role: PortalRole): NavItem[] {
       { href: '/sms/staff/teachers', label: 'Staff & assignments', icon: 'badge' },
       { href: '/staff/teachers', label: 'Staff accounts', icon: 'manage_accounts' },
       { href: '/sms/staff/students', label: 'Students', icon: 'group' },
+      { href: '/sms/staff/parents', label: 'Parent accounts', icon: 'family_restroom' },
       { href: '/sms/staff/assessment', label: 'Assessment setup', icon: 'settings' },
     ] : []),
     { href: '/sms/staff/attendance', label: 'Attendance', icon: 'fact_check' },
+    { href: '/sms/staff/fees', label: 'Fees', icon: 'receipt_long' },
+    ...(role === 'TEACHER' ? [{ href: '/sms/staff/parent-comments', label: 'Parent comments', icon: 'forum' }] : []),
     { href: '/sms/staff/scores', label: 'Score entry', icon: 'edit_note' },
     { href: '/sms/staff/reports', label: 'Report cards', icon: 'description' },
     { href: '/sms/staff/announcements', label: 'Staff notices', icon: 'campaign' },

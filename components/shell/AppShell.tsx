@@ -16,7 +16,7 @@ type AppShellProps = {
   userName: string;
   userMeta: string;
   /** Which logout endpoint to call — the two session types have separate cookies. */
-  logoutPath: "/api/auth/staff/logout" | "/api/auth/student/logout";
+  logoutPath: "/api/auth/staff/logout" | "/api/auth/student/logout" | "/api/auth/parent/logout";
   primaryAction?: { label: string; href: string; icon?: string };
   children: ReactNode;
 };

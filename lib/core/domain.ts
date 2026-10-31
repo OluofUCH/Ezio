@@ -24,7 +24,7 @@
  * validation layer accepts a value the shared types reject, and it fails to compile.
  */
 
-export type ClassLevel = 'JSS1' | 'JSS2' | 'JSS3' | 'SS1' | 'SS2' | 'SS3'
+export type ClassLevel = typeof CLASS_LEVELS[number]
 
 export type UserRole = 'SUPER_ADMIN' | 'SCHOOL_ADMIN' | 'TEACHER'
 
@@ -35,7 +35,11 @@ export type QuestionType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'TRUE_FALSE'
 export type SessionStatus = 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED' | 'FLAGGED'
 
 /** The fixed set, for runtime validation on the LocalServer where there is no enum. */
-export const CLASS_LEVELS: readonly ClassLevel[] = ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3']
+export const CLASS_LEVELS = [
+  'NURSERY1', 'NURSERY2',
+  'PRIMARY1', 'PRIMARY2', 'PRIMARY3', 'PRIMARY4', 'PRIMARY5', 'PRIMARY6',
+  'JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3',
+] as const
 
 export const QUESTION_TYPES: readonly QuestionType[] = [
   'SINGLE_CHOICE',

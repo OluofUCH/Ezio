@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const STAFF_COOKIE = 'cbt_staff'
 const STUDENT_COOKIE = 'cbt_student'
+const PARENT_COOKIE = 'sms_parent'
 
 /**
  * Routing guard — UX only, deliberately not a security boundary.
@@ -30,16 +31,17 @@ export function middleware(req: NextRequest) {
   // it is a student surface and guarded by the same cookie.
   const isStudentArea = pathname.startsWith('/student') || pathname.startsWith('/exam') || pathname.startsWith('/sms/student')
   const isStaffArea = pathname.startsWith('/staff') || pathname.startsWith('/sms/staff')
+  const isParentArea = pathname.startsWith('/sms/parent')
 
-  if (!isStudentArea && !isStaffArea) return NextResponse.next()
+  if (!isStudentArea && !isStaffArea && !isParentArea) return NextResponse.next()
 
-  const cookieName = isStudentArea ? STUDENT_COOKIE : STAFF_COOKIE
+  const cookieName = isParentArea ? PARENT_COOKIE : isStudentArea ? STUDENT_COOKIE : STAFF_COOKIE
   if (req.cookies.get(cookieName)?.value) return NextResponse.next()
 
   const login = new URL('/login', req.url)
   // Preselect the correct credentials. Successful sign-in always opens SMS;
   // users can return to their exams from the CBT module after authentication.
-  login.searchParams.set('as', isStudentArea ? 'student' : 'staff')
+  login.searchParams.set('as', isParentArea ? 'parent' : isStudentArea ? 'student' : 'staff')
 
   return NextResponse.redirect(login)
 }
@@ -50,5 +52,5 @@ export const config = {
    * from `lib/api.ts` — redirecting a fetch to an HTML login page would surface as an
    * unreadable-response error in the client instead of a clear "session expired".
    */
-  matcher: ['/student/:path*', '/exam/:path*', '/staff/:path*', '/sms/student/:path*', '/sms/staff/:path*'],
+  matcher: ['/student/:path*', '/exam/:path*', '/staff/:path*', '/sms/student/:path*', '/sms/staff/:path*', '/sms/parent/:path*'],
 }

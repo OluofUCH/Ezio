@@ -95,7 +95,7 @@ export async function changeEnrollment(ctx: ScopedStaffContext, raw: z.infer<typ
     const arm = await tx.classArm.findFirst({ where: { id: exiting ? current!.classArmId : input.classArmId ?? '' } })
     if (!arm) throw notFound('Target class arm not found.')
     const previousLevel = current?.classArm.level ?? student.classLevel
-    if (input.reason === 'PROMOTION' && CLASS_LEVELS.indexOf(arm.level) !== CLASS_LEVELS.indexOf(previousLevel) + 1) throw conflict('Promotion must move to the next JSS/SS class level.')
+    if (input.reason === 'PROMOTION' && CLASS_LEVELS.indexOf(arm.level) !== CLASS_LEVELS.indexOf(previousLevel) + 1) throw conflict('Promotion must move to the next class level.')
     if (input.reason === 'REPEAT' && arm.level !== previousLevel) throw conflict('Repeating keeps the same class level.')
     if (input.reason === 'TRANSFER' && !exiting && arm.level !== previousLevel) throw conflict('An arm transfer keeps the same class level. Use promotion for a level change.')
     const date = asDatabaseDate(input.effectiveDate)

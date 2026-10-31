@@ -13,7 +13,7 @@
 
 export type { ClassLevel, ExamMode, QuestionType, SessionStatus, UserRole }
 
-export const CLASS_LEVELS: readonly ClassLevel[] = ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3']
+export { CLASS_LEVELS } from '@/lib/core/domain'
 export const EXAM_MODES: readonly ExamMode[] = ['ONLINE', 'OFFLINE_LAN', 'HYBRID']
 
 export type PageMeta = { page: number; pageSize: number; total: number; totalPages: number }
@@ -74,6 +74,13 @@ export type StudentLoginResult = {
   student: { id: string; regNumber: string; fullName: string; classLevel: ClassLevel }
   school: SchoolSummary
   sessionType: 'student'
+  expiresIn: string
+}
+
+export type ParentLoginResult = {
+  parent: { id: string; fullName: string; phone: string }
+  school: SchoolSummary
+  sessionType: 'parent'
   expiresIn: string
 }
 

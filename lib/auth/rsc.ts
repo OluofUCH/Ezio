@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers'
 import { unscopedDb } from '@/lib/db'
 import { tenantClient, type TenantDb } from '@/lib/tenant'
-import { STAFF_COOKIE, STUDENT_COOKIE } from '@/lib/auth/cookies'
+import { STAFF_COOKIE, STUDENT_COOKIE, PARENT_COOKIE } from '@/lib/auth/cookies'
+import { resolveParentSession } from '@/lib/auth/parent'
 import { verifyToken } from '@/lib/auth/jwt'
 import type { StaffSession, StudentSession } from '@/lib/auth/session'
 
@@ -149,5 +150,17 @@ export async function getStudentContext(): Promise<RscStudentContext | null> {
       classLevel: student.classLevel,
     },
     school: { id: student.school.id, name: student.school.name, slug: student.school.slug },
+  }
+}
+
+export async function getParentContext() {
+  const token = await readSessionCookie(PARENT_COOKIE)
+  if (!token) return null
+  let payload
+  try { payload = await verifyToken(token) } catch { return null }
+  if (payload.typ !== 'parent') return null
+  try { return await resolveParentSession(payload) } catch (error) {
+    if (error instanceof Error && 'status' in error && (error.status === 401 || error.status === 403)) return null
+    throw error
   }
 }

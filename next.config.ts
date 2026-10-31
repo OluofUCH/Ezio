@@ -41,8 +41,13 @@ const nextConfig: NextConfig = {
 
   // SheetJS ships a CommonJS bundle that must not be traced/bundled by Turbopack
   // or webpack - leaving it external keeps `require` working inside the Node runtime.
-  serverExternalPackages: ['xlsx', '@prisma/client', 'sharp', 'pdf-lib', '@pdf-lib/fontkit'],
-  outputFileTracingIncludes: { '/api/sms/**': ['./node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf'] },
+  serverExternalPackages: ['xlsx', '@prisma/client', 'sharp', 'pdf-lib', '@pdf-lib/fontkit', 'dejavu-fonts-ttf'],
+  outputFileTracingIncludes: {
+    '/api/sms/**': [
+      './node_modules/dejavu-fonts-ttf/package.json',
+      './node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf',
+    ],
+  },
 
   // Never leak stack traces or Prisma error internals to a client in production.
   // `lib/api.ts` handles the actual sanitising; this only stops the dev overlay

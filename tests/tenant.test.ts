@@ -37,6 +37,22 @@ test('teacher profiles and teaching assignments inherit the same automatic tenan
   for (const call of calls) assert.deepEqual(call.args, { where: { schoolId: 'school-a' } }, call.model)
 })
 
+test('parent accounts, child links and comments inherit mandatory school scope', async () => {
+  const { db, calls } = probe()
+  await db.parent.findMany()
+  await db.parentStudent.findMany()
+  await db.parentComment.findMany()
+  for (const call of calls) assert.deepEqual(call.args, { where: { schoolId: 'school-a' } }, call.model)
+  await assert.rejects(db.parentStudent.update({ where: { id: 'link' }, data: { schoolId: 'school-b' } }), { code: 'CONFIGURATION_ERROR' })
+})
+
+test('fee records cannot escape their authenticated school', async () => {
+  const { db, calls } = probe()
+  await db.studentFee.findMany()
+  assert.deepEqual(calls[0]?.args, { where: { schoolId: 'school-a' } })
+  await assert.rejects(db.studentFee.update({ where: { id: 'fee' }, data: { schoolId: 'school-b' } }), { code: 'CONFIGURATION_ERROR' })
+})
+
 test('OR branches and a supplied school cannot replace the mandatory tenant filter', async () => {
   const { db, calls } = probe()
   const where = { OR: [{ schoolId: 'school-b' }, { name: { contains: 'Math' } }] }

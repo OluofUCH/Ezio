@@ -24,13 +24,16 @@ async function checkSettings(db: ReadDb, config: BackfillConfig) {
   }
   const defaults = await db.classArm.findMany({ where: { isDefault: true } })
   for (const arm of defaults) {
+    if (!config.defaultArms[arm.level]) continue
     if (arm.name !== config.defaultArms[arm.level]) {
       throw conflict(`The default ${arm.level} arm is already "${arm.name}". Review the mapping rather than replacing it.`)
     }
   }
   const allArms = await db.classArm.findMany()
   for (const level of CLASS_LEVELS) {
-    const configured = config.arms?.[level] ?? [config.defaultArms[level]]
+    const defaultName = config.defaultArms[level]
+    if (!defaultName) continue
+    const configured = config.arms?.[level] ?? [defaultName]
     for (const label of configured) {
       const matches = allArms.filter((arm) => arm.level === level && arm.name.trim().toLowerCase() === label.trim().toLowerCase())
       if (matches.length > 1 || (matches.length === 1 && matches[0]!.name !== label)) {
@@ -58,7 +61,9 @@ export async function inspectBackfill(db: TenantDb, rawConfig: BackfillConfig) {
     conflicts: [] as { record: string; id: string; message: string }[],
   }
   for (const level of CLASS_LEVELS) {
-    for (const label of config.arms?.[level] ?? [config.defaultArms[level]]) {
+    const defaultName = config.defaultArms[level]
+    if (!defaultName) continue
+    for (const label of config.arms?.[level] ?? [defaultName]) {
       if (!settings.allArms.some((arm) => arm.level === level && arm.name === label)) report.armsToCreate++
     }
   }
@@ -83,6 +88,7 @@ export async function inspectBackfill(db: TenantDb, rawConfig: BackfillConfig) {
         } else if (student._count.enrollments) {
           throw conflict('Enrollment history exists without a current placement; manual review is required.')
         } else {
+          if (!config.defaultArms[student.classLevel]) throw conflict(`Configure a default arm for ${student.classLevel} before backfilling this student.`)
           report.enrollmentsToCreate++
         }
       } catch (error) {
@@ -140,6 +146,7 @@ async function initializeSchool(tx: SchoolTransaction, config: BackfillConfig) {
   const arms = []
   for (const level of CLASS_LEVELS) {
     const defaultName = config.defaultArms[level]
+    if (!defaultName) continue
     for (const name of config.arms?.[level] ?? [defaultName]) {
       let arm = await tx.classArm.findFirst({ where: { level, name } })
       if (!arm) {
@@ -150,7 +157,7 @@ async function initializeSchool(tx: SchoolTransaction, config: BackfillConfig) {
       arms.push(arm)
     }
   }
-  // Expose compatibility only when all six default arms exist, in the same commit.
+  // Expose compatibility only when all configured default arms exist, in the same commit.
   if (!session.isCurrent) {
     session = await tx.academicSession.update({ where: { id: session.id }, data: { isCurrent: true } })
   }

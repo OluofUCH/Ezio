@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import { unscopedDb } from '@/lib/db'
 
-export type AuditActorType = 'STAFF' | 'STUDENT' | 'DEVICE' | 'SYSTEM'
+export type AuditActorType = 'STAFF' | 'STUDENT' | 'PARENT' | 'DEVICE' | 'SYSTEM'
 
 export type AuditInput = {
   schoolId?: string | null

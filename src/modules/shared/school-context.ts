@@ -5,6 +5,7 @@ import { conflict, forbidden, notFound } from '@/lib/errors'
 import { tenantClient } from '@/lib/tenant'
 import { SMS_SCHOOL_COOKIE, signSchoolScope, verifySchoolScope } from './school-scope-token'
 import { SMS_CONTEXT_HEADER, smsContextKey } from './context-key'
+import { requireParent } from '@/lib/auth/parent'
 
 export const selectSchoolSchema = z.object({ schoolId: z.string().trim().min(1).max(64) }).strict()
 
@@ -58,6 +59,12 @@ export async function requireSmsStudent(req: NextRequest) {
   if (!student || !student.school.isActive) throw forbidden('Student access is unavailable.')
   checkRequestContext(req, student.id, context.session.schoolId)
   return { ...context, schoolId: context.session.schoolId, student }
+}
+
+export async function requireSmsParent(req: NextRequest) {
+  const context = await requireParent(req)
+  checkRequestContext(req, context.parent.id, context.schoolId)
+  return context
 }
 
 export async function requireSmsAdministrator(req: NextRequest): Promise<SmsAdministratorContext> {

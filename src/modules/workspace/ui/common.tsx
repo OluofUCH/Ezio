@@ -20,7 +20,7 @@ export function useSmsApi() {
   const workspace = useSmsWorkspace()
   const schoolId = workspace.school?.id ?? ''
   const headers = { [SMS_CONTEXT_HEADER]: smsContextKey(workspace.user.id, schoolId) }
-  const base = `/api/sms/${workspace.user.role === 'STUDENT' ? 'student' : 'staff'}/workspace/`
+  const base = `/api/sms/${workspace.user.role === 'PARENT' ? 'parent' : workspace.user.role === 'STUDENT' ? 'student' : 'staff'}/workspace/`
   return { ...workspace, base, headers, key: [...schoolDataPrefix(workspace.user.id), schoolId], get: <T,>(path: string, signal?: AbortSignal) => api.get<T>(path.startsWith('/') ? path : base + path, { signal, headers }), post: <T,>(path: string, body: unknown) => api.post<T>(path.startsWith('/') ? path : base + path, body, { headers }), patch: <T,>(path: string, body: unknown) => api.patch<T>(path, body, { headers }), put: <T,>(path: string, body: unknown) => api.put<T>(path, body, { headers }) }
 }
 export function useData<T>(path: string | null) {

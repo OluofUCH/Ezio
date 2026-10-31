@@ -64,6 +64,22 @@ export const importStudentsQuerySchema = z.object({
  * roster over an `S` is a support ticket, not a validation win.
  */
 const CLASS_LEVEL_ALIASES: Record<string, string> = {
+  NURSERY1: 'NURSERY1',
+  NURSERY2: 'NURSERY2',
+  NUR1: 'NURSERY1',
+  NUR2: 'NURSERY2',
+  PRIMARY1: 'PRIMARY1',
+  PRIMARY2: 'PRIMARY2',
+  PRIMARY3: 'PRIMARY3',
+  PRIMARY4: 'PRIMARY4',
+  PRIMARY5: 'PRIMARY5',
+  PRIMARY6: 'PRIMARY6',
+  PRY1: 'PRIMARY1',
+  PRY2: 'PRIMARY2',
+  PRY3: 'PRIMARY3',
+  PRY4: 'PRIMARY4',
+  PRY5: 'PRIMARY5',
+  PRY6: 'PRIMARY6',
   JS1: 'JSS1',
   JS2: 'JSS2',
   JS3: 'JSS3',

@@ -14,6 +14,7 @@ import type { NextRequest, NextResponse } from 'next/server'
 
 export const STAFF_COOKIE = 'cbt_staff'
 export const STUDENT_COOKIE = 'cbt_student'
+export const PARENT_COOKIE = 'sms_parent'
 
 /** Convert a `jose`-style duration ("8h", "45m") to seconds for `Max-Age`. */
 export function ttlToSeconds(ttl: string): number {

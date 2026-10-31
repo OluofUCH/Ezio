@@ -6,10 +6,10 @@ import { Alert } from "@/components/ui/Feedback";
 import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
 import { ApiClientError, api, errorMessage } from "@/lib/client/api";
-import type { StaffLoginResult, StudentLoginResult } from "@/lib/client/types";
+import type { StaffLoginResult, StudentLoginResult, ParentLoginResult } from "@/lib/client/types";
 import { portalHome } from "@/src/modules/shared/navigation";
 
-type Tab = "student" | "staff";
+type Tab = "student" | "staff" | "parent";
 
 /** Remembers the school code so a student at a shared lab machine types it once. */
 const SLUG_KEY = "Ezio:school-slug";
@@ -27,6 +27,7 @@ export function LoginForm({
 
   const [schoolSlug, setSchoolSlug] = useState("");
   const [regNumber, setRegNumber] = useState("");
+  const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,6 +42,7 @@ export function LoginForm({
   }, []);
 
   function switchTab(next: Tab) {
+    if (busy) return;
     setTab(next);
     setError(null);
     setFieldErrors({});
@@ -74,6 +76,10 @@ export function LoginForm({
         }
 
         router.replace(portalHome("STUDENT"));
+      } else if (tab === "parent") {
+        const result = await api.post<ParentLoginResult>("/api/auth/parent/login", { schoolSlug, phone, pin });
+        try { window.localStorage.setItem(SLUG_KEY, result.school.slug); } catch { /* non-fatal */ }
+        router.replace(portalHome("PARENT"));
       } else {
         const result = await api.post<StaffLoginResult>(
           "/api/auth/staff/login",
@@ -110,7 +116,8 @@ export function LoginForm({
 
       <div
         className="mb-8 flex gap-1 rounded-lg bg-surface-container p-1"
-        role="tablist"
+        role="group"
+        aria-label="Sign in as"
       >
         <TabButton
           active={tab === "student"}
@@ -121,6 +128,9 @@ export function LoginForm({
         <TabButton active={tab === "staff"} onClick={() => switchTab("staff")}>
           Admin / Teacher
         </TabButton>
+        <TabButton active={tab === "parent"} onClick={() => switchTab("parent")}>
+          Parent
+        </TabButton>
       </div>
 
       {error ? (
@@ -130,7 +140,7 @@ export function LoginForm({
       ) : null}
 
       <form onSubmit={submit} className="space-y-5" noValidate>
-        {tab === "student" ? (
+        {tab !== "staff" ? (
           <>
             <Field
               id="schoolSlug"
@@ -144,7 +154,18 @@ export function LoginForm({
               error={fieldErrors.schoolSlug}
               required
             />
-            <Field
+            {tab === "parent" ? <Field
+              id="phone"
+              label="Phone number"
+              icon="phone"
+              type="tel"
+              value={phone}
+              onChange={setPhone}
+              placeholder="e.g. 08012345678"
+              autoComplete="username"
+              error={fieldErrors.phone}
+              required
+            /> : <Field
               id="regNumber"
               label="Registration number"
               icon="badge"
@@ -155,7 +176,7 @@ export function LoginForm({
               autoCapitalize="characters"
               error={fieldErrors.regNumber}
               required
-            />
+            />}
             <Field
               id="pin"
               label="PIN"
@@ -211,7 +232,7 @@ export function LoginForm({
 
       <div className="mt-8 border-t border-surface-variant pt-6 text-center">
         <p className="font-label-sm text-label-sm text-outline">
-          {tab === "student"
+          {tab !== "staff"
             ? "Forgotten your PIN? Your school administrator can reset it for you."
             : "Trouble signing in? Contact your platform administrator."}
         </p>
@@ -232,13 +253,12 @@ function TabButton({
   return (
     <button
       type="button"
-      role="tab"
-      aria-selected={active}
+      aria-pressed={active}
       onClick={onClick}
       className={
         active
-          ? "flex-1 rounded-md border-b-2 border-primary-container bg-white py-2 font-label-md text-label-md text-on-surface shadow-sm transition-all"
-          : "flex-1 rounded-md py-2 font-label-md text-label-md text-on-surface-variant transition-all hover:text-on-surface"
+          ? "min-h-11 flex-1 rounded-md border-b-2 border-primary-container bg-white px-2 py-2 font-label-md text-label-md text-on-surface shadow-sm transition-all"
+          : "min-h-11 flex-1 rounded-md px-2 py-2 font-label-md text-label-md text-on-surface-variant transition-all hover:text-on-surface"
       }
     >
       {children}

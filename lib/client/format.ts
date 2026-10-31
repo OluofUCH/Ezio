@@ -5,11 +5,11 @@ import type { ClassLevel, ExamMode, SessionStatus } from '@/lib/client/types'
  * ------------------------------------------------------------------ */
 
 /**
- * `JSS1` → `JSS 1`. The schema's enum is the storage form (PRD §4.2 fixes the set);
+ * `JSS1` → `JSS 1`, `PRIMARY1` → `Primary 1`. The enum is the storage form;
  * this is only ever for display, so nothing parses it back.
  */
 export function classLevelLabel(level: ClassLevel): string {
-  return level.replace(/^(JSS|SS)(\d)$/, '$1 $2')
+  return level.replace(/^NURSERY(\d)$/, 'Nursery $1').replace(/^PRIMARY(\d)$/, 'Primary $1').replace(/^(JSS|SS)(\d)$/, '$1 $2')
 }
 
 const MODE_LABELS: Record<ExamMode, string> = {

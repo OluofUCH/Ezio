@@ -16,6 +16,10 @@ import { reportPdf } from '@/src/modules/results/pdf'
 import * as bridge from '@/src/modules/cbt-results/service'
 import * as announcements from '@/src/modules/announcements/service'
 import { staffLookups, staffDashboard, studentDashboard } from '@/src/modules/dashboards/service'
+import * as parents from '@/src/modules/parents/service'
+import { createParentSchema, updateParentSchema, parentLinkSchema, parentListSchema, teacherFamiliesSchema, commentQuerySchema, commentSchema } from '@/src/modules/parents/validation'
+import { feeRegister, setFeeStatus } from '@/src/modules/fees/service'
+import { feeQuerySchema, feeStatusSchema } from '@/src/modules/fees/validation'
 
 const armTerm = z.object({ classArmId: idSchema, termId: idSchema }).strict()
 const bodySchema = z.object({ op: z.string().optional() }).passthrough()
@@ -27,6 +31,11 @@ export async function staffWorkspaceGet(req: NextRequest, area: string) {
   switch (area) {
     case 'lookups': return ok({ schoolId: ctx.schoolId, ...await staffLookups(ctx) })
     case 'dashboard': return ok({ schoolId: ctx.schoolId, ...await staffDashboard(ctx) })
+    case 'parents': return ok(await parents.listParents(ctx, readQuery(req, parentListSchema)))
+    case 'parent-students': return ok(await parents.parentStudentChoices(ctx, readQuery(req, parentListSchema)))
+    case 'parent-families': return ok(await parents.teacherFamilies(ctx, readQuery(req, teacherFamiliesSchema)))
+    case 'parent-comments': return ok(await parents.listComments(ctx, readQuery(req, commentQuerySchema)))
+    case 'fees': return ok(await feeRegister(ctx, readQuery(req, feeQuerySchema)))
     case 'students': return ok({ schoolId: ctx.schoolId, ...await students.listManagedStudents(ctx, readQuery(req, students.studentListSchema)) })
     case 'attendance': return ok(await attendance.getRoll(ctx, readQuery(req, attendance.rollQuerySchema)))
     case 'assessment': return ok(await results.assessmentSettings(ctx))
@@ -76,6 +85,13 @@ export async function staffWorkspacePost(req: NextRequest, area: string) {
   }
   const { op, ...input } = await readJson(req, bodySchema)
   switch (area) {
+    case 'parents': {
+      if (op === 'update') return ok({ parent: await parents.updateParent(ctx, updateParentSchema.parse(input)) })
+      if (op === 'link') return ok(await parents.setParentLink(ctx, parentLinkSchema.parse(input)))
+      return created({ parent: await parents.createParent(ctx, createParentSchema.parse(input)) })
+    }
+    case 'parent-comments': return created(await parents.postComment(ctx, commentSchema.parse(input)))
+    case 'fees': return ok(await setFeeStatus(ctx, feeStatusSchema.parse(input)))
     case 'students': {
       if (op === 'update') { const { studentId, ...data } = input; return ok(await students.updateManagedStudent(ctx, idSchema.parse(studentId), students.studentProfileSchema.parse(data))) }
       return created({ student: await students.createManagedStudent(ctx, students.managedStudentSchema.parse(input)) })

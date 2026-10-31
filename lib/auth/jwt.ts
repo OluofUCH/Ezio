@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import type { ClassLevel, UserRole } from '@prisma/client'
 import { configurationError, unauthenticated } from '@/lib/errors'
+import { isClassLevel } from '@/lib/core/domain'
 
 /**
  * Session tokens for both audiences, signed with one secret and told apart by a
@@ -32,7 +33,14 @@ export type StudentTokenPayload = {
   classLevel: ClassLevel
 }
 
-export type TokenPayload = StaffTokenPayload | StudentTokenPayload
+export type ParentTokenPayload = {
+  typ: 'parent'
+  sub: string
+  schoolId: string
+  authVersion: number
+}
+
+export type TokenPayload = StaffTokenPayload | StudentTokenPayload | ParentTokenPayload
 
 let cachedSecret: Uint8Array | null = null
 
@@ -58,6 +66,7 @@ function ttl(envVar: string, fallback: string): string {
 
 export const staffTtl = () => ttl('STAFF_SESSION_TTL', '8h')
 export const studentTtl = () => ttl('STUDENT_SESSION_TTL', '6h')
+export const parentTtl = () => ttl('PARENT_SESSION_TTL', '8h')
 
 async function sign(claims: Record<string, unknown>, subject: string, expiresIn: string): Promise<string> {
   return new SignJWT(claims)
@@ -82,6 +91,10 @@ export function signStudentToken(
   payload: Omit<StudentTokenPayload, 'sub' | 'typ'> & { sub: string },
 ): Promise<string> {
   return sign({ typ: 'student', schoolId: payload.schoolId, classLevel: payload.classLevel }, payload.sub, studentTtl())
+}
+
+export function signParentToken(payload: Omit<ParentTokenPayload, 'typ'>): Promise<string> {
+  return sign({ typ: 'parent', schoolId: payload.schoolId, authVersion: payload.authVersion }, payload.sub, parentTtl())
 }
 
 /**
@@ -124,11 +137,17 @@ export async function verifyToken(token: string): Promise<TokenPayload> {
   if (claims.typ === 'student') {
     const schoolId = typeof claims.schoolId === 'string' ? claims.schoolId : null
     const classLevel = claims.classLevel
-    const validLevels = ['JSS1', 'JSS2', 'JSS3', 'SS1', 'SS2', 'SS3']
-    if (!schoolId || typeof classLevel !== 'string' || !validLevels.includes(classLevel)) {
+    if (!schoolId || !isClassLevel(classLevel)) {
       throw unauthenticated('Student session token is malformed.')
     }
     return { typ: 'student', sub, schoolId, classLevel: classLevel as ClassLevel }
+  }
+
+  if (claims.typ === 'parent') {
+    if (typeof claims.schoolId !== 'string' || !claims.schoolId || typeof claims.authVersion !== 'number' || !Number.isSafeInteger(claims.authVersion) || claims.authVersion < 1) {
+      throw unauthenticated('Parent session token is malformed.')
+    }
+    return { typ: 'parent', sub, schoolId: claims.schoolId, authVersion: claims.authVersion }
   }
 
   throw unauthenticated('Session token has an unrecognised type.')
