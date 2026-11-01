@@ -51,10 +51,13 @@ export async function requireStaff(req: NextRequest, allowedRoles?: UserRole[]):
 
   const user = await unscopedDb.user.findUnique({
     where: { id: session.userId },
-    select: { isActive: true, role: true, schoolId: true },
+    select: { isActive: true, role: true, schoolId: true, school: { select: { isActive: true } } },
   })
   if (!user) throw unauthenticated('Your account no longer exists.')
   if (!user.isActive) throw forbidden('Your account has been deactivated.')
+  if (user.role !== 'SUPER_ADMIN' && (!user.schoolId || !user.school?.isActive)) {
+    throw forbidden('Your school is paused or unavailable.')
+  }
 
   // Trust the database over the token for role and school. A role change or a
   // school reassignment must take effect immediately, not at token expiry.
@@ -93,33 +96,19 @@ export type ScopedStaffContext = {
  * and TEACHER the `schoolId` comes from their account and is not influenceable by
  * the request in any way.
  *
- * SUPER_ADMIN is the single exception: having no school of their own, they must
- * name one with `?schoolId=`. That is the *only* place in the codebase where a
- * school id is read for CBT scope, and it is safe precisely because the role it
- * is gated behind already has platform-wide access — it selects a scope rather
- * than escaping one.
- * SMS data routes use their separate signed school-selection context.
+ * Platform administrators cannot enter a school scope. Query parameters and old
+ * school-selection cookies never grant school access.
  */
 export async function requireSchoolScope(
   req: NextRequest,
-  allowedRoles: UserRole[] = ['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'],
+  allowedRoles: UserRole[] = ['SCHOOL_ADMIN', 'TEACHER'],
 ): Promise<ScopedStaffContext> {
   const session = await requireStaff(req, allowedRoles)
 
-  let schoolId = session.schoolId
-
   if (session.role === 'SUPER_ADMIN') {
-    const requested = req.nextUrl.searchParams.get('schoolId')
-    if (!requested) {
-      throw forbidden(
-        'As SUPER_ADMIN you have no school of your own. Add ?schoolId=<id> to target a specific school.',
-      )
-    }
-    const exists = await unscopedDb.school.findUnique({ where: { id: requested }, select: { id: true } })
-    if (!exists) throw forbidden('The requested school does not exist.')
-    schoolId = requested
+    throw forbidden('Platform administrators cannot access school operations.')
   }
-
+  const schoolId = session.schoolId
   if (!schoolId) throw forbidden('Your account is not attached to a school.')
 
   return { session, schoolId, db: tenantClient(schoolId) }
@@ -137,12 +126,8 @@ export type ScopedStudentContext = {
 /**
  * Authenticate a student request and scope the client to their school.
  *
- * Token-only by design — no `isActive` re-check here, unlike staff. Student
- * requests include autosave traffic from an entire exam hall, and the token
- * already fixes both `schoolId` and `studentId`, so a stale token cannot reach
- * another tenant's data or another student's session. School/roster state is
- * re-verified where it actually matters: at login and at `/start`, which is the
- * gate on beginning a new attempt.
+ * The token fixes both school and student identity. School status is checked on
+ * every request so pausing a school also applies to already signed-in students.
  */
 export async function requireStudent(req: NextRequest): Promise<ScopedStudentContext> {
   const token = readToken(req, STUDENT_COOKIE)
@@ -160,7 +145,10 @@ export async function requireStudent(req: NextRequest): Promise<ScopedStudentCon
     classLevel: payload.classLevel,
   }
 
-  return { session, db: tenantClient(session.schoolId) }
+  const db = tenantClient(session.schoolId)
+  const school = await db.school.findFirst({ select: { isActive: true } })
+  if (!school?.isActive) throw forbidden('Your school is paused or unavailable.')
+  return { session, db }
 }
 
 /* ------------------------------------------------------------------ *
@@ -169,10 +157,10 @@ export async function requireStudent(req: NextRequest): Promise<ScopedStudentCon
 
 /** Whether a role may read plaintext student PINs. Teachers may not. */
 export function canReadStudentPins(role: UserRole): boolean {
-  return role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN'
+  return role === 'SCHOOL_ADMIN'
 }
 
 /** Whether a role may create/modify staff accounts and the student roster. */
 export function canManageSchool(role: UserRole): boolean {
-  return role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN'
+  return role === 'SCHOOL_ADMIN'
 }

@@ -123,8 +123,8 @@ async function seedSuperAdmin(): Promise<void> {
       passwordHash: await hashPassword(password),
       fullName: 'Platform Super Admin',
       role: 'SUPER_ADMIN',
-      // Null by design: a SUPER_ADMIN sits above every tenant and selects a school
-      // per-request with ?schoolId= (lib/auth/session.ts).
+      // Platform accounts manage onboarding and school status, without entering
+      // a school's SMS or CBT scope.
       schoolId: null,
     },
     select: { id: true, email: true, createdAt: true, updatedAt: true },

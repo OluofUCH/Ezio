@@ -6,7 +6,7 @@ export type NavGroup = { id: string; label: string; icon: string; children: NavL
 export type NavItem = NavLink | NavGroup
 
 export function portalHome(role: PortalRole) {
-  return role === 'PARENT' ? '/sms/parent' : role === 'STUDENT' ? '/sms/student' : '/sms/staff'
+  return role === 'SUPER_ADMIN' ? '/staff/platform' : role === 'PARENT' ? '/sms/parent' : role === 'STUDENT' ? '/sms/student' : '/sms/staff'
 }
 
 export function isNavLinkActive(pathname: string, item: NavLink) {
@@ -14,7 +14,12 @@ export function isNavLinkActive(pathname: string, item: NavLink) {
 }
 
 /** SMS is the shared workspace; CBT is one module inside its navigation. */
-export function portalNavigation(role: PortalRole): NavItem[] {
+export function portalNavigation(role: PortalRole, permissions: { canAdmitStudents?: boolean } = {}): NavItem[] {
+  if (role === 'SUPER_ADMIN') return [
+    { href: '/staff/platform', label: 'Platform dashboard', icon: 'dashboard', exact: true },
+    { href: '/staff/schools', label: 'Schools', icon: 'apartment' },
+    { href: '/staff/account', label: 'My account', icon: 'manage_accounts' },
+  ]
   if (role === 'PARENT') return [
     { href: '/sms/parent', label: 'Child results', icon: 'description', exact: true },
     { href: '/sms/parent/comments', label: 'Teacher comments', icon: 'forum' },
@@ -31,7 +36,7 @@ export function portalNavigation(role: PortalRole): NavItem[] {
     }]
   }
 
-  const admin = role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN'
+  const admin = role === 'SCHOOL_ADMIN'
   return [
     home,
     {
@@ -43,7 +48,6 @@ export function portalNavigation(role: PortalRole): NavItem[] {
         { href: '/sms/staff/bridge', label: 'Import CBT scores', icon: 'sync' },
       ],
     },
-    ...(role === 'SUPER_ADMIN' ? [{ href: '/staff/schools', label: 'Schools', icon: 'apartment' }] : []),
     ...(admin ? [
       { href: '/sms/staff/calendar', label: 'Academic calendar', icon: 'calendar_month' },
       { href: '/sms/staff/classes-subjects', label: 'Classes & subjects', icon: 'category' },
@@ -53,6 +57,7 @@ export function portalNavigation(role: PortalRole): NavItem[] {
       { href: '/sms/staff/parents', label: 'Parent accounts', icon: 'family_restroom' },
       { href: '/sms/staff/assessment', label: 'Assessment setup', icon: 'settings' },
     ] : []),
+    ...(role === 'TEACHER' && permissions.canAdmitStudents ? [{ href: '/sms/staff/students', label: 'My students', icon: 'group' }] : []),
     { href: '/sms/staff/attendance', label: 'Attendance', icon: 'fact_check' },
     { href: '/sms/staff/fees', label: 'Fees', icon: 'receipt_long' },
     ...(role === 'TEACHER' ? [{ href: '/sms/staff/parent-comments', label: 'Parent comments', icon: 'forum' }] : []),

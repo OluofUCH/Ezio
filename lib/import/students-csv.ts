@@ -4,6 +4,7 @@ import { generatePin } from '@/lib/auth/pin'
 import { normaliseRegNumber } from '@/lib/auth/student-credentials'
 import { ACCEPTED_CLASS_LEVEL_SPELLINGS, normaliseClassLevel } from '@/lib/validation/student'
 import { WorkbookFormatError, type RowIssue } from '@/lib/import/questions-xlsx'
+import { STUDENT_PROFILE_HEADERS, studentProfileDetailsSchema, type StudentProfileDetails } from '@/src/modules/students/profile-validation'
 
 /**
  * ROSTER CSV IMPORT (PRD §3.1 step 3, §4.5)
@@ -18,7 +19,7 @@ import { WorkbookFormatError, type RowIssue } from '@/lib/import/questions-xlsx'
  * where these files come from. One dependency instead of two.
  */
 
-export type ParsedStudentRow = {
+export type ParsedStudentRow = StudentProfileDetails & {
   row: number
   regNumber: string
   fullName: string
@@ -36,11 +37,12 @@ export type StudentParseReport = {
   errors: RowIssue[]
 }
 
-export const ROSTER_HEADERS = ['regNumber', 'fullName', 'classLevel', 'pin', 'arm'] as const
+export const ROSTER_HEADERS = ['regNumber', 'fullName', 'classLevel', 'pin', 'arm', ...STUDENT_PROFILE_HEADERS] as const
 const REQUIRED_HEADERS = ['regNumber', 'fullName', 'classLevel'] as const
 
 function normaliseHeader(header: string): string {
-  return header.trim().toLowerCase().replace(/[\s_-]/g, '')
+  const key = header.trim().toLowerCase().replace(/[\s_-]/g, '')
+  return key === 'classarm' ? 'arm' : key === 'dob' ? 'dateofbirth' : key
 }
 
 export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {}): StudentParseReport {
@@ -48,7 +50,9 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
 
   let workbook: XLSX.WorkBook
   try {
-    workbook = XLSX.read(buffer, { type: 'buffer', raw: false, cellFormula: false, cellHTML: false, cellDates: false })
+    // CSV values stay text so PINs, registration numbers and guardian phones keep
+    // leading zeros. Formatted Excel cells retain their display value below.
+    workbook = XLSX.read(buffer, { type: 'buffer', raw: true, cellFormula: false, cellHTML: false, cellDates: false, cellNF: true, dateNF: 'yyyy-mm-dd' })
   } catch (err) {
     throw new WorkbookFormatError(
       `The file could not be read. ${err instanceof Error ? err.message : ''}`.trim(),
@@ -60,11 +64,15 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
   const sheet = workbook.Sheets[sheetName]
   if (!sheet) throw new WorkbookFormatError('The file could not be read.')
 
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+  const grid = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+    header: 1,
     defval: '',
     raw: false,
-    blankrows: false,
+    blankrows: true,
   })
+  const range = XLSX.utils.decode_range(sheet['!ref'] ?? 'A1')
+  const rows = grid.slice(1).map((cells, index) => ({ cells, rowNumber: range.s.r + index + 2 }))
+    .filter(({ cells }) => cells.some(value => String(value ?? '').trim()))
 
   if (rows.length === 0) {
     throw new WorkbookFormatError('The file has a header row but no student rows.')
@@ -75,22 +83,32 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
     )
   }
 
-  const headerMap = new Map<string, string>()
-  for (const key of Object.keys(rows[0] as Record<string, unknown>)) {
-    headerMap.set(normaliseHeader(key), key)
+  const headerMap = new Map<string, number>()
+  for (const [column, value] of (grid[0] ?? []).entries()) {
+    const key = normaliseHeader(String(value ?? ''))
+    if (!key) continue
+    if (headerMap.has(key)) throw new WorkbookFormatError(`Duplicate column: ${String(value)}. Keep one column for each field.`)
+    headerMap.set(key, column)
   }
 
   const missing = REQUIRED_HEADERS.filter((header) => !headerMap.has(normaliseHeader(header)))
   if (missing.length > 0) {
     throw new WorkbookFormatError(
-      `Missing required column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}. Expected header row: ${ROSTER_HEADERS.join(', ')} (pin is optional).`,
+      `Missing required column${missing.length > 1 ? 's' : ''}: ${missing.join(', ')}. Expected header row: ${ROSTER_HEADERS.join(', ')}. Only regNumber, fullName and classLevel are required by the file format.`,
     )
   }
 
-  const cell = (row: Record<string, unknown>, header: string): string => {
+  const cell = (row: typeof rows[number], header: string): string => {
     const key = headerMap.get(normaliseHeader(header))
-    if (!key) return ''
-    const value = row[key]
+    if (key === undefined) return ''
+    if (header === 'dateOfBirth') {
+      const source = sheet[XLSX.utils.encode_cell({ r: row.rowNumber - 1, c: range.s.c + key })] as XLSX.CellObject | undefined
+      if (source?.t === 'n' && source.z && XLSX.SSF.is_date(source.z)) {
+        const date = XLSX.SSF.parse_date_code(Number(source.v), { date1904: Boolean(workbook.Workbook?.WBProps?.date1904) })
+        if (date) return `${String(date.y).padStart(4, '0')}-${String(date.m).padStart(2, '0')}-${String(date.d).padStart(2, '0')}`
+      }
+    }
+    const value = row.cells[key]
     return value === null || value === undefined ? '' : String(value).trim()
   }
 
@@ -103,8 +121,8 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
   // with an opaque Prisma error, so it is caught as a row-level error instead.
   const seenRegNumbers = new Map<string, number>()
 
-  rows.forEach((row, index) => {
-    const rowNumber = index + 2
+  rows.forEach((row) => {
+    const { rowNumber } = row
     const rowErrors: RowIssue[] = []
     const warnings: RowIssue[] = []
 
@@ -173,6 +191,20 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
       pin = rawPin
     }
 
+    const rawProfile = Object.fromEntries(STUDENT_PROFILE_HEADERS.map(header => [header, cell(row, header)]).filter(([, value]) => value !== ''))
+    const profile = studentProfileDetailsSchema.safeParse(rawProfile)
+    if (!profile.success) {
+      for (const issue of profile.error.issues) err(String(issue.path[0]), 'PROFILE_INVALID', issue.message)
+    } else {
+      if (profile.data.dateOfBirth && profile.data.dateOfBirth > new Date().toISOString().slice(0, 10)) {
+        err('dateOfBirth', 'DATE_OF_BIRTH_FUTURE', 'Date of birth cannot be in the future.')
+      }
+      const { guardianName, guardianPhone, guardianEmail, guardianRelationship } = profile.data
+      if ((guardianName || guardianPhone || guardianEmail || guardianRelationship) && (!guardianName || !guardianPhone)) {
+        warnings.push({ row: rowNumber, column: !guardianName ? 'guardianName' : 'guardianPhone', code: 'GUARDIAN_INCOMPLETE', message: 'Both guardian name and phone are needed for automatic parent access. The student can still be imported.' })
+      }
+    }
+
     if (rowErrors.length > 0) {
       errors.push(...rowErrors)
       return
@@ -180,6 +212,7 @@ export function parseRosterFile(buffer: Buffer, opts: { maxRows?: number } = {})
 
     warningCount += warnings.length
     valid.push({
+      ...(profile.success ? profile.data : {}),
       row: rowNumber,
       regNumber,
       fullName: rawName,

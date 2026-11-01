@@ -13,7 +13,7 @@ type Notice = { id: string; title: string; body: string; audience: AnnouncementA
 const selectClass = 'min-h-11 w-full min-w-0 rounded-lg border border-outline bg-surface px-3 py-2'
 
 export function AnnouncementsScreen() {
-  const { user } = useSmsApi(), admin = user.role === 'SCHOOL_ADMIN' || user.role === 'SUPER_ADMIN'
+  const { user } = useSmsApi(), admin = user.role === 'SCHOOL_ADMIN'
   return <PageFrame title={admin ? 'School notices' : 'Staff notices'} description={admin ? 'Send updates to staff, all parents, or the parents of a selected class arm.' : 'Read notices addressed to you and your classes.'}>{() => <NoticePanel canPost={admin} />}</PageFrame>
 }
 

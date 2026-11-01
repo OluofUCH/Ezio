@@ -60,7 +60,7 @@ export const GET = route(async (req) => {
  * plant a user inside another school.
  */
 export const POST = route(async (req) => {
-  const { db, schoolId } = await requireSchoolScope(req, ['SUPER_ADMIN', 'SCHOOL_ADMIN'])
+  const { db, schoolId } = await requireSchoolScope(req, ['SCHOOL_ADMIN'])
   const input = await readJson(req, createUserSchema)
 
   // `User.email` is globally unique, not per-school, so this must be checked

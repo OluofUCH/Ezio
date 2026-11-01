@@ -1,4 +1,6 @@
 ﻿import type { ClassLevel, ExamMode, QuestionType, SessionStatus, UserRole } from '@/lib/core/domain'
+import type { StudentProfileDetails } from '@/src/modules/students/profile-validation'
+import type { GuardianAccountResult } from '@/src/modules/parents/rules'
 
 /**
  * Response shapes for the routes the UI calls.
@@ -33,6 +35,7 @@ export type StaffMe = {
     canManageSchools: boolean
     canManageStaff: boolean
     canManageStudents: boolean
+    canAdmitStudents: boolean
     canReadStudentPins: boolean
     canManageExams: boolean
   }
@@ -346,7 +349,7 @@ export type Student = {
   fullName: string
   classLevel: ClassLevel
   createdAt: string
-  /** Present only for SCHOOL_ADMIN / SUPER_ADMIN â€” see `canReadStudentPins`. */
+  /** Present only for SCHOOL_ADMIN; see `canReadStudentPins`. */
   pin?: string
   _count: { examSessions: number }
 }
@@ -367,27 +370,31 @@ export type StudentImportDryRun = {
   dryRun: true
   summary: ImportSummary
   warnings: RowIssue[]
-  preview: {
+  preview: (StudentProfileDetails & {
     row: number
     regNumber: string
     fullName: string
     classLevel: ClassLevel
+    arm?: string
     pinWillBeGenerated: boolean
-  }[]
+  })[]
 }
 
 export type StudentCredential = {
   regNumber: string
   fullName: string
   classLevel: ClassLevel
+  arm?: string
   pin: string
   pinGenerated: boolean
+  parentAccount: GuardianAccountResult
 }
 
 export type StudentImportResult = {
   imported: number
   summary: ImportSummary
   warnings: RowIssue[]
+  guardianSummary: Record<GuardianAccountResult['status'], number>
   /** The list an admin prints and hands out. */
   credentials: StudentCredential[]
 }
@@ -477,7 +484,7 @@ export type School = {
   logoUrl: string | null
   isActive: boolean
   createdAt: string
-  _count: { users: number; students: number; exams: number; localServers: number }
+  _count: { users: number; students: number }
 }
 
 export type SchoolList = { schools: School[]; meta: PageMeta }
@@ -491,7 +498,7 @@ export type CreatedSchool = {
     logoUrl: string | null
     isActive: boolean
     createdAt: string
-    admin: { id: string; email: string; fullName: string; role: UserRole } | null
+    admin: { id: string; email: string; fullName: string; role: UserRole }
   }
 }
 

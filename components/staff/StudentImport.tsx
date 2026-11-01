@@ -4,9 +4,9 @@ import { useRef, useState } from 'react'
 import { Alert, Badge } from '@/components/ui/Feedback'
 import { Icon } from '@/components/ui/Icon'
 import { Spinner } from '@/components/ui/Spinner'
-import { useScope } from '@/components/staff/ScopeProvider'
 import { ApiClientError, api, errorMessage } from '@/lib/client/api'
 import { classLevelLabel } from '@/lib/client/format'
+import { DEFAULT_PARENT_PIN } from '@/src/modules/parents/rules'
 import type {
   StudentImportDryRun,
   StudentImportFailure,
@@ -25,8 +25,12 @@ import type {
  * A validation failure arrives as a 422 with the row report attached, so `catch` is the
  * normal path for a bad file, not an exception to it.
  */
-export function StudentImport({ onImported }: { onImported: () => void }) {
-  const { withScope } = useScope()
+export function StudentImport({ onImported, endpoint = '/api/students/import', headers, isFormTeacher = false }: {
+  onImported: () => void
+  endpoint?: string
+  headers?: Record<string, string>
+  isFormTeacher?: boolean
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const [file, setFile] = useState<File | null>(null)
@@ -45,6 +49,7 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
   }
 
   async function send(candidate: File, dryRun: boolean) {
+    if (busy) return
     setBusy(true)
     setError(null)
     setFailure(null)
@@ -56,13 +61,13 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
 
       if (dryRun) {
         const data = await api.post<StudentImportDryRun>(
-          withScope('/api/students/import?dryRun=true'),
-          form,
+          `${endpoint}?dryRun=true`,
+          form, { headers },
         )
         setPreview(data)
         setFile(candidate)
       } else {
-        const data = await api.post<StudentImportResult>(withScope('/api/students/import'), form)
+        const data = await api.post<StudentImportResult>(endpoint, form, { headers })
         setResult(data)
         setPreview(null)
         setFile(null)
@@ -85,7 +90,9 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
     <div className="space-y-4">
       {result ? (
         <Alert tone="success" title={`Imported ${result.imported} students`} onDismiss={() => setResult(null)}>
-          <p>Hand each student their registration number and PIN. You can re-read PINs from the roster below at any time.</p>
+          <p>Download the credentials and give each student their registration number and PIN.{isFormTeacher ? ' Ask the school administrator if a PIN needs to be retrieved later.' : ' Student PINs are also available in CBT → Candidates.'}</p>
+          <p className="mt-2">Guardian onboarding: {result.guardianSummary.created} new parent accounts, {result.guardianSummary.linked} children linked to an existing account, {result.guardianSummary.inactive} with inactive access, {result.guardianSummary.incomplete} incomplete profiles.</p>
+          <p className="mt-2">New parents start with PIN {DEFAULT_PARENT_PIN}. Existing parent PINs are preserved.</p>
           <button
             type="button"
             onClick={() => downloadCredentials(result)}
@@ -144,7 +151,7 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
             </ul>
           ) : null}
 
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-outline-variant bg-surface custom-scrollbar">
+          <div className="max-h-96 overflow-auto rounded-lg border border-outline-variant bg-surface custom-scrollbar">
             <table className="w-full border-collapse text-left">
               <thead className="sticky top-0 bg-surface-container-high">
                 <tr className="font-label-sm text-label-sm text-on-surface">
@@ -153,6 +160,7 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
                   <th className="p-3 font-semibold">Name</th>
                   <th className="p-3 font-semibold">Class</th>
                   <th className="p-3 font-semibold">PIN</th>
+                  <th className="p-3 font-semibold">Profile &amp; guardian</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-subtle">
@@ -162,10 +170,20 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
                     <td className="p-3 font-body-md text-body-md text-on-surface">{row.regNumber}</td>
                     <td className="p-3 font-body-md text-body-md text-on-surface">{row.fullName}</td>
                     <td className="p-3 font-body-md text-body-md text-on-surface-variant">
-                      {classLevelLabel(row.classLevel)}
+                      {classLevelLabel(row.classLevel)} {row.arm || '(default arm)'}
                     </td>
                     <td className="p-3 font-label-sm text-label-sm text-on-surface-variant">
                       {row.pinWillBeGenerated ? 'auto-generated' : 'from file'}
+                    </td>
+                    <td className="min-w-48 p-3 text-sm">
+                      <details><summary className="cursor-pointer font-medium">Review details</summary>
+                        <dl className="mt-2 space-y-2">
+                          {[
+                            ['Date of birth', row.dateOfBirth], ['Gender', row.gender], ['Address', row.address],
+                            ['Guardian name', row.guardianName], ['Relationship', row.guardianRelationship], ['Guardian phone', row.guardianPhone], ['Guardian email', row.guardianEmail],
+                          ].map(([label, value]) => <div key={label}><dt className="text-on-surface-variant">{label}</dt><dd className="break-words">{value || '—'}</dd></div>)}
+                        </dl>
+                      </details>
                     </td>
                   </tr>
                 ))}
@@ -193,7 +211,7 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
           className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-6 text-center transition-all ${
             dragging ? 'drag-active' : 'border-outline-variant bg-surface-container-low/50 hover:bg-surface-container-low'
           }`}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => { if (!busy) inputRef.current?.click() }}
           onDragEnter={(event) => {
             event.preventDefault()
             setDragging(true)
@@ -207,12 +225,13 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
             event.preventDefault()
             setDragging(false)
             const dropped = event.dataTransfer.files[0]
-            if (dropped) void send(dropped, true)
+            if (dropped && !busy) void send(dropped, true)
           }}
           role="button"
+          aria-disabled={busy}
           tabIndex={0}
           onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') inputRef.current?.click()
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); if (!busy) inputRef.current?.click() }
           }}
         >
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface-container-high text-on-surface">
@@ -228,6 +247,7 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
           <input
             ref={inputRef}
             type="file"
+            disabled={busy}
             accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={(event) => {
@@ -238,6 +258,12 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
           />
         </div>
       )}
+
+      <div className="space-y-2 text-sm text-on-surface-variant">
+        <p>Keep regNumber, fullName and classLevel. The sample also includes pin, arm, dateOfBirth, gender, address, guardianName, guardianRelationship, guardianPhone and guardianEmail.</p>
+        <p>Use YYYY-MM-DD for dates in CSV files, or date-formatted Excel cells. Keep registration numbers, PINs and phone numbers as text to preserve leading zeros. Leave a student PIN blank to generate one.</p>
+        <p>{isFormTeacher ? 'Every row must name one of your assigned form class arms.' : 'An omitted arm uses the level’s default arm when a session is active.'} A guardian name and phone create parent access automatically; siblings with the same phone share one account.</p>
+      </div>
 
       <a
         href="/api/templates/students.csv"
@@ -252,12 +278,17 @@ export function StudentImport({ onImported }: { onImported: () => void }) {
 
 /** Credential slips as CSV, so the office can mail-merge or print them. */
 function downloadCredentials(result: StudentImportResult) {
-  const header = ['Reg Number', 'Full Name', 'Class', 'PIN']
+  const header = ['Reg Number', 'Full Name', 'Class', 'Arm', 'Student PIN', 'Guardian Name', 'Guardian Phone', 'Parent Account', 'Initial Parent PIN']
   const rows = result.credentials.map((credential) => [
     credential.regNumber,
     credential.fullName,
     credential.classLevel,
+    credential.arm ?? '',
     credential.pin,
+    credential.parentAccount.parentName ?? '',
+    credential.parentAccount.phone ?? '',
+    credential.parentAccount.status,
+    credential.parentAccount.status === 'created' ? DEFAULT_PARENT_PIN : '',
   ])
 
   const csv = [header, ...rows]

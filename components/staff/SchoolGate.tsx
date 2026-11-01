@@ -5,28 +5,22 @@ import { EmptyState } from '@/components/ui/Feedback'
 import { Icon } from '@/components/ui/Icon'
 import { useScope } from '@/components/staff/ScopeProvider'
 
-/**
- * Blocks a school-scoped page until a super admin has chosen which school to act on.
- *
- * Without this the page would fetch with no `?schoolId=` and `requireSchoolScope` would
- * answer 403 with a developer-facing message about adding a query parameter. Naming the
- * missing decision is the honest version of the same refusal.
- */
+/** Client-side fallback; server page and API guards enforce school-role access. */
 export function SchoolGate({ children }: { children: React.ReactNode }) {
-  const { needsSchoolChoice } = useScope()
+  const { isSuperAdmin } = useScope()
 
-  if (!needsSchoolChoice) return <>{children}</>
+  if (!isSuperAdmin) return <>{children}</>
 
   return (
     <div className="card">
       <EmptyState
         icon="apartment"
-        title="Choose a school first"
-        description="Choose a school on the school dashboard. SMS and CBT use the same selection."
+        title="School staff access required"
+        description="Manage onboarding and school access from the platform dashboard."
         action={
-          <Link href="/sms/staff" className="btn-primary">
+          <Link href="/staff/platform" className="btn-primary">
             <Icon name="list" size={20} />
-            Choose a school
+            Platform dashboard
           </Link>
         }
       />
@@ -34,24 +28,18 @@ export function SchoolGate({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** A small "acting on <school>" indicator with a switch link, for super admins. */
+/** The school attached to the authenticated account. */
 export function ActiveSchoolBanner() {
   const { isSuperAdmin, schoolId, activeSchoolName } = useScope()
 
-  if (!isSuperAdmin || !schoolId) return null
+  if (isSuperAdmin || !schoolId) return null
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-secondary-fixed-dim bg-secondary-fixed/40 px-4 py-3">
       <p className="flex items-center gap-2 font-label-md text-label-md text-on-secondary-fixed">
         <Icon name="visibility" size={18} />
-        Viewing <strong>{activeSchoolName ?? schoolId}</strong> as platform admin
+        <strong>{activeSchoolName ?? schoolId}</strong>
       </p>
-      <Link
-        href="/sms/staff"
-        className="shrink-0 font-label-md text-label-md text-on-secondary-fixed underline hover:no-underline"
-      >
-        Switch school
-      </Link>
     </div>
   )
 }

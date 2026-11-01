@@ -1,6 +1,6 @@
 import { AppShell } from '@/components/shell/AppShell'
 import { ScopeProvider } from '@/components/staff/ScopeProvider'
-import { getSmsStaffPageContext } from '@/src/modules/shared/page-context'
+import { getStaffPageContext } from '@/src/modules/shared/page-context'
 import { portalNavigation } from '@/src/modules/shared/navigation'
 import type { UserRole } from '@/lib/client/types'
 
@@ -11,7 +11,7 @@ const ROLE_LABELS: Record<UserRole, string> = {
 }
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
-  const { user, school } = await getSmsStaffPageContext()
+  const { user, school, isFormTeacher } = await getStaffPageContext()
 
   return (
     <ScopeProvider
@@ -20,8 +20,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       school={school}
     >
       <AppShell
-        nav={portalNavigation(user.role)}
-        portalLabel={school?.name ?? 'School management'}
+        nav={portalNavigation(user.role, { canAdmitStudents: isFormTeacher })}
+        portalLabel={user.role === 'SUPER_ADMIN' ? 'Platform administration' : school?.name ?? 'School management'}
         userName={user.fullName}
         userMeta={`${ROLE_LABELS[user.role]} · ${user.email}`}
         logoutPath="/api/auth/staff/logout"

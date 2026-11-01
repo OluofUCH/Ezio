@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { route } from '@/lib/api'
-import { requireStaff } from '@/lib/auth/session'
+import { requireSchoolScope } from '@/lib/auth/session'
 import { buildQuestionTemplate } from '@/lib/import/templates'
 
 export const runtime = 'nodejs'
@@ -15,7 +15,7 @@ export const runtime = 'nodejs'
  * Staff-only. Not secret, but there is no reason for it to be a public endpoint.
  */
 export const GET = route(async (req) => {
-  await requireStaff(req)
+  await requireSchoolScope(req)
 
   const workbook = buildQuestionTemplate()
 

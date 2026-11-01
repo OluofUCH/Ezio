@@ -20,7 +20,7 @@ function FeesLookup() {
 }
 
 function FeesPanel({ lookup }: { lookup: Lookup }) {
-  const api = useSmsApi(), admin = api.user.role === 'SCHOOL_ADMIN' || api.user.role === 'SUPER_ADMIN'
+  const api = useSmsApi(), admin = api.user.role === 'SCHOOL_ADMIN'
   const terms = termsOf(lookup), currentSession = lookup.sessions.find(session => session.isCurrent)
   const today = new Date().toISOString().slice(0, 10)
   const initialTerm = terms.find(term => term.academicSessionId === currentSession?.id && term.startDate.slice(0, 10) <= today && term.endDate.slice(0, 10) >= today)

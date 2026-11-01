@@ -5,21 +5,22 @@ import { forbidden } from '@/lib/errors'
 export function assertStaffScope(context: Pick<ScopedStaffContext, 'session' | 'schoolId'>): void {
   const { session, schoolId } = context
   if (session.typ !== 'staff' || !session.userId || !schoolId) throw forbidden('Staff scope required.')
-  if (session.role !== 'SUPER_ADMIN' && session.schoolId !== schoolId) {
+  if (!['SCHOOL_ADMIN', 'TEACHER'].includes(session.role)) throw forbidden('School staff access required.')
+  if (session.schoolId !== schoolId) {
     throw forbidden('The school does not match the authenticated staff account.')
   }
 }
 
 export function assertRosterManager(context: Pick<ScopedStaffContext, 'session' | 'schoolId'>): void {
   assertStaffScope(context)
-  if (context.session.role !== 'SUPER_ADMIN' && context.session.role !== 'SCHOOL_ADMIN') {
+  if (context.session.role !== 'SCHOOL_ADMIN') {
     throw forbidden('Only a school administrator can modify the student roster.')
   }
 }
 
 export function assertSchoolAdministrator(context: Pick<ScopedStaffContext, 'session' | 'schoolId'>): void {
   assertStaffScope(context)
-  if (context.session.role !== 'SUPER_ADMIN' && context.session.role !== 'SCHOOL_ADMIN') {
+  if (context.session.role !== 'SCHOOL_ADMIN') {
     throw forbidden('Only a school administrator can manage school setup.')
   }
 }

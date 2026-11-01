@@ -9,20 +9,13 @@ import { assertSchoolAdministrator } from '@/src/modules/shared/authorization'
 import { asDatabaseDate, calendarDateSchema } from '@/src/modules/shared/calendar-date'
 import { schoolTransaction } from '@/src/modules/shared/transaction'
 import { defaultArmFor } from '@/src/modules/school-setup/rules'
-import { parentPhoneSchema } from '@/src/modules/parents/validation'
 import { hashPassword } from '@/lib/auth/password'
 import { onboardGuardian } from '@/src/modules/parents/onboarding'
 import { DEFAULT_PARENT_PIN, type GuardianAccountResult } from '@/src/modules/parents/rules'
+import { studentProfileDetailsSchema } from './profile-validation'
+import { admissionArmIds, assertAdmissionArm } from './access'
 
-const text = (max: number) => z.string().trim().max(max).transform((v) => v || null).nullable().optional()
-export const studentProfileDetailsSchema = z.object({
-  dateOfBirth: calendarDateSchema.or(z.literal('')).transform(value => value || null).nullable().optional(),
-  gender: text(40), address: text(500),
-  guardianName: z.string().trim().max(120).refine(value => !value || value.length >= 2, 'Enter the guardian’s full name.').transform(value => value ? value.replace(/\s+/g, ' ') : null).nullable().optional(),
-  guardianRelationship: text(80),
-  guardianPhone: parentPhoneSchema.or(z.literal('')).transform(value => value || null).nullable().optional(),
-  guardianEmail: z.union([z.literal(''), z.string().trim().email().max(254)]).transform((v) => v || null).nullable().optional(),
-}).strict()
+export { studentProfileDetailsSchema } from './profile-validation'
 export const studentProfileSchema = studentProfileDetailsSchema.extend({ fullName: fullNameSchema.optional(), pin: pinSchema.optional() }).strict()
 export const managedStudentSchema = studentProfileDetailsSchema.extend({ regNumber: regNumberSchema, fullName: fullNameSchema, classArmId: idSchema, pin: pinSchema.optional() }).strict()
 export const studentListSchema = paginationSchema.extend({ search: z.string().trim().max(100).optional(), classArmId: idSchema.optional() }).strict()
@@ -33,32 +26,39 @@ export const transitionSchema = z.object({
 }).strict()
 
 export async function listManagedStudents(ctx: ScopedStaffContext, raw: z.infer<typeof studentListSchema>) {
-  assertSchoolAdministrator(ctx)
+  const allowed = await admissionArmIds(ctx)
   const input = studentListSchema.parse(raw)
+  if (input.classArmId) assertAdmissionArm(allowed, input.classArmId)
   const where = {
     ...(input.search ? { OR: [{ fullName: { contains: input.search, mode: 'insensitive' as const } }, { regNumber: { contains: input.search.toUpperCase() } }] } : {}),
-    ...(input.classArmId ? { enrollments: { some: { isCurrent: true, classArmId: input.classArmId } } } : {}),
+    ...(allowed || input.classArmId ? { enrollments: { some: {
+      isCurrent: true,
+      ...(allowed ? { status: 'ACTIVE' as const, classArm: { formTeacherId: ctx.session.userId } } : {}),
+      ...(input.classArmId ? { classArmId: input.classArmId } : {}),
+    } } } : {}),
   }
   const [students, total] = await Promise.all([
     ctx.db.student.findMany({ where, ...paginate(input), orderBy: { fullName: 'asc' }, select: {
-      id: true, regNumber: true, fullName: true, classLevel: true, pin: true,
-      profile: true, photo: { select: { updatedAt: true } },
-      enrollments: { include: { classArm: true, academicSession: true }, orderBy: [{ createdAt: 'desc' }], take: 30 },
+      id: true, regNumber: true, fullName: true, classLevel: true, pin: allowed === null,
+      profile: allowed === null, photo: allowed === null ? { select: { updatedAt: true } } : false,
+      enrollments: { ...(allowed ? { where: { isCurrent: true, status: 'ACTIVE' as const, classArm: { formTeacherId: ctx.session.userId } } } : {}), include: { classArm: true, academicSession: true }, orderBy: [{ createdAt: 'desc' }], take: 30 },
     } }), ctx.db.student.count({ where }),
   ])
   return { students, meta: pageMeta(total, input) }
 }
 
 export async function createManagedStudent(ctx: ScopedStaffContext, raw: z.infer<typeof managedStudentSchema>) {
-  assertSchoolAdministrator(ctx)
+  await admissionArmIds(ctx)
   const input = managedStudentSchema.parse(raw)
   const { regNumber, fullName, classArmId, pin, dateOfBirth, ...profile } = input
   if (dateOfBirth && asDatabaseDate(dateOfBirth) > new Date()) throw conflict('Date of birth cannot be in the future.')
   const parentPinHash = profile.guardianName && profile.guardianPhone ? await hashPassword(DEFAULT_PARENT_PIN) : ''
   return schoolTransaction(ctx.db, async (tx) => {
+    const allowed = await admissionArmIds(ctx, tx)
     const arm = await tx.classArm.findFirst({ where: { id: classArmId } })
     const session = await tx.academicSession.findFirst({ where: { isCurrent: true } })
     if (!arm) throw notFound('Class arm not found.')
+    assertAdmissionArm(allowed, arm.id)
     if (!session) throw conflict('Activate an academic session before admitting students into arms.')
     const student = await tx.student.create({ data: { schoolId: ctx.schoolId, regNumber, fullName, classLevel: arm.level, pin: pin ?? generatePin() } })
     await tx.enrollment.create({ data: { schoolId: ctx.schoolId, studentId: student.id, academicSessionId: session.id, classArmId: arm.id, sequence: 1, isCurrent: true, reason: 'INITIAL' } })

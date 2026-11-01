@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { api, errorMessage, query } from '@/lib/client/api'
+import { api, query } from '@/lib/client/api'
 import { Icon } from '@/components/ui/Icon'
+import { StudentImport } from '@/components/staff/StudentImport'
 import { studentProfileFields } from '@/src/modules/students/ui/profile-fields'
 import { DEFAULT_PARENT_PIN, guardianAccountMessage, type GuardianAccountResult } from '@/src/modules/parents/rules'
 import { Action, Button, DataState, EditForm, Input, Label, PageFrame, Picker, option, termsOf, useData, useSmsApi, type Lookup } from './common'
@@ -54,11 +55,17 @@ function FormTeacher({ arm, teachers }: { arm: Lookup['arms'][number]; teachers:
   return <div className="rounded-lg border p-3 space-y-2"><Picker label={armLabel(arm)} value={value} onChange={setValue} options={teachers.map((t) => option(t.id, t.fullName))}/><Action label="Save form teacher" run={() => apiClient.put(`/api/sms/staff/class-arms/${arm.id}/form-teacher`, { teacherId: value || null })} after={() => void client.invalidateQueries({ queryKey: apiClient.key })}/></div>
 }
 
-type ManagedStudent = { id: string; regNumber: string; fullName: string; classLevel: string; pin: string; profile: Record<string, string | null> | null; photo: { updatedAt: string } | null; enrollments: { id: string; status: string; reason: string; isCurrent: boolean; academicSession: { id: string; name: string }; classArm: { id: string; level: string; name: string } }[] }
-export function StudentsScreen() { return <PageFrame title="Students & enrollment" description="Registration number is the admission number and remains the CBT login identifier.">{() => <LookupState>{(lookup) => <StudentsPanel lookup={lookup}/>}</LookupState>}</PageFrame> }
+type ManagedStudent = { id: string; regNumber: string; fullName: string; classLevel: string; pin?: string; profile?: Record<string, string | null> | null; photo?: { updatedAt: string } | null; enrollments: { id: string; status: string; reason: string; isCurrent: boolean; academicSession: { id: string; name: string }; classArm: { id: string; level: string; name: string } }[] }
+export function StudentsScreen() {
+  const { user } = useSmsApi()
+  const admin = user.role === 'SCHOOL_ADMIN'
+  return <PageFrame title={admin ? 'Students & enrollment' : 'My students'} description={admin ? 'Admit students, record guardian details and manage school placements.' : 'Admit students into your assigned form classes and create guardian access in the same step.'}>{() => <LookupState>{(lookup) => <StudentsPanel lookup={lookup}/>}</LookupState>}</PageFrame>
+}
 function StudentsPanel({ lookup }: { lookup: Lookup }) {
   const apiClient = useSmsApi(), [editor, setEditor] = useState<string | null>(null), [selected, setSelected] = useState(''), [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
+  const admin = apiClient.user.role === 'SCHOOL_ADMIN'
+  const arms = admin ? lookup.arms : lookup.arms.filter(arm => arm.formTeacherId === apiClient.user.id)
   const state = useData<{ students: ManagedStudent[]; meta: { total: number } }>(`students${query({ pageSize: 200, search })}`)
   const student = state.data?.students.find((item) => item.id === selected)
   return <DataState loading={state.isPending} error={state.error} retry={() => void state.refetch()}><div className="space-y-5">
@@ -66,18 +73,18 @@ function StudentsPanel({ lookup }: { lookup: Lookup }) {
     <p role="status" className="text-sm">{message}</p>
     {(editor === 'new' || editor === 'profile') && <p className="card p-4 text-sm">Add the guardian’s name and phone number to create parent access automatically. Siblings with the same guardian phone share one account. A new parent account starts with PIN <strong>{DEFAULT_PARENT_PIN}</strong>; existing PINs stay unchanged.</p>}
     {editor === 'new' && <EditForm title="Admit student" cancel={() => setEditor(null)} done={() => setEditor(null)} save={async data => {
-      const result = await apiClient.post<{ student: { fullName: string; parentAccount: GuardianAccountResult } }>('students', data)
-      setMessage(`${result.student.fullName} admitted. ${guardianAccountMessage(result.student.parentAccount)}`)
+      const result = await apiClient.post<{ student: { fullName: string; pin: string; parentAccount: GuardianAccountResult } }>('students', data)
+      setMessage(`${result.student.fullName} admitted. Student PIN: ${result.student.pin}. ${guardianAccountMessage(result.student.parentAccount)}`)
       return result
     }} fields={[
       { name: 'regNumber', label: 'Admission / registration number', required: true },
       { name: 'fullName', label: 'Full name', required: true },
-      { name: 'classArmId', label: 'Class arm', type: 'select', required: true, options: lookup.arms.map(a => option(a.id, armLabel(a))) },
+      { name: 'classArmId', label: 'Class arm', type: 'select', required: true, options: arms.map(a => option(a.id, armLabel(a))) },
       { name: 'pin', label: 'PIN (leave blank to generate)' },
       ...studentProfileFields(),
     ]} />}
     {editor === 'import' && <RosterUpload close={() => setEditor(null)} />}
-    {student && editor === 'profile' && <EditForm title={`Profile · ${student.fullName}`} cancel={() => setEditor(null)} done={() => setEditor(null)} save={async data => {
+    {admin && student && editor === 'profile' && <EditForm title={`Profile · ${student.fullName}`} cancel={() => setEditor(null)} done={() => setEditor(null)} save={async data => {
       const result = await apiClient.post<{ parentAccount: GuardianAccountResult }>('students', { op: 'update', studentId: student.id, ...data })
       setMessage(`${student.fullName} updated. ${guardianAccountMessage(result.parentAccount)}`)
       return result
@@ -86,15 +93,16 @@ function StudentsPanel({ lookup }: { lookup: Lookup }) {
       { name: 'pin', label: 'New PIN' },
       ...studentProfileFields(student.profile, true),
     ]} />}
-    {student && editor === 'transition' && <TransitionForm student={student} lookup={lookup} close={() => setEditor(null)} />}
-    <div className="card overflow-x-auto"><table className="w-full min-w-[760px] text-left"><thead><tr className="border-b bg-surface-container-low"><th className="p-3">Student</th><th>Admission no.</th><th>Current placement</th><th>Status</th><th>Actions</th></tr></thead><tbody className="divide-y">{state.data?.students.map((item) => { const current=item.enrollments.find(e=>e.isCurrent); return <tr key={item.id}><td className="p-3"><strong>{item.fullName}</strong></td><td>{item.regNumber}</td><td>{current?`${current.academicSession.name} · ${armLabel(current.classArm)}`:'—'}</td><td>{current?.status ?? 'Unplaced'}</td><td><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>{setSelected(item.id);setEditor('profile')}}>Profile</Button><Button variant="outline" onClick={()=>{setSelected(item.id);setEditor('transition')}}>Placement</Button><PhotoUpload studentId={item.id}/></div></td></tr>})}</tbody></table></div>
-    <section className="card space-y-3 p-5"><h2 className="text-xl font-semibold">Activate academic session</h2><p className="text-sm">Activation moves staged placements into the current session. Stage every active student first when rolling over.</p>{lookup.sessions.filter(s=>!s.isCurrent).map(s=><Action key={s.id} label={`Activate ${s.name}`} run={()=>apiClient.post('enrollments',{op:'activate',academicSessionId:s.id})}/>)}</section>
+    {admin && student && editor === 'transition' && <TransitionForm student={student} lookup={lookup} close={() => setEditor(null)} />}
+    <div className="card overflow-x-auto"><table className="w-full min-w-[640px] text-left"><thead><tr className="border-b bg-surface-container-low"><th className="p-3">Student</th><th>Admission no.</th><th>Current placement</th><th>Status</th>{admin && <th>Actions</th>}</tr></thead><tbody className="divide-y">{state.data?.students.map((item) => { const current=item.enrollments.find(e=>e.isCurrent); return <tr key={item.id}><td className="p-3"><strong>{item.fullName}</strong></td><td>{item.regNumber}</td><td>{current?`${current.academicSession.name} · ${armLabel(current.classArm)}`:'—'}</td><td>{current?.status ?? 'Unplaced'}</td>{admin && <td><div className="flex flex-wrap gap-2"><Button variant="outline" onClick={()=>{setSelected(item.id);setEditor('profile')}}>Profile</Button><Button variant="outline" onClick={()=>{setSelected(item.id);setEditor('transition')}}>Placement</Button><PhotoUpload studentId={item.id}/></div></td>}</tr>})}</tbody></table></div>
+    {admin && <section className="card space-y-3 p-5"><h2 className="text-xl font-semibold">Activate academic session</h2><p className="text-sm">Activation moves staged placements into the current session. Stage every active student first when rolling over.</p>{lookup.sessions.filter(s=>!s.isCurrent).map(s=><Action key={s.id} label={`Activate ${s.name}`} run={()=>apiClient.post('enrollments',{op:'activate',academicSessionId:s.id})}/>)}</section>}
   </div></DataState>
 }
 function RosterUpload({ close }: { close:()=>void }) {
-  const apiClient=useSmsApi(), client=useQueryClient(), [file,setFile]=useState<File|null>(null),[message,setMessage]=useState(''),[busy,setBusy]=useState(false)
-  async function send(dry:boolean){if(!file)return;setBusy(true);try{const form=new FormData();form.set('file',file);const data=await api.post<{imported?:number;summary:{validRows:number}}>(`${apiClient.base}students-import${dry?'?dryRun=true':''}`,form,{headers:apiClient.headers});setMessage(dry?`${data.summary.validRows} rows ready.`:`Imported ${data.imported}.`);if(!dry){await client.invalidateQueries({queryKey:apiClient.key});close()}}catch(e){setMessage(errorMessage(e))}finally{setBusy(false)}}
-  return <section className="card space-y-3 p-5"><h2 className="text-lg font-semibold">Import students</h2><a className="btn-secondary" href="/api/templates/students.csv">Download sample CSV</a><p className="text-sm">Replace the sample rows with your students. Columns: regNumber, fullName, classLevel, pin, arm. Leave pin blank to generate one. Arm is optional; otherwise the level’s default arm is used.</p><Label htmlFor="roster-upload">Roster file</Label><Input id="roster-upload" type="file" accept=".csv,.xlsx,.xls" onChange={e=>setFile(e.target.files?.[0]??null)}/><p role="status">{message}</p><div className="flex flex-wrap gap-2"><Button disabled={busy||!file} onClick={()=>void send(true)}>Preview</Button><Button disabled={busy||!file} onClick={()=>void send(false)}>Import</Button><Button variant="outline" onClick={close}>Cancel</Button></div></section>
+  const apiClient = useSmsApi(), client = useQueryClient()
+  return <section className="card space-y-4 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">Import students</h2><Button variant="outline" onClick={close}>Close import</Button></div>
+    <StudentImport endpoint={`${apiClient.base}students-import`} headers={apiClient.headers} isFormTeacher={apiClient.user.role === 'TEACHER'} onImported={() => { void client.invalidateQueries({ queryKey: apiClient.key }) }} />
+  </section>
 }
 function PhotoUpload({studentId}:{studentId:string}){const apiClient=useSmsApi(),[busy,setBusy]=useState(false);return <label className="inline-flex min-h-11 cursor-pointer items-center rounded-lg border px-3 text-sm font-semibold">{busy?'Uploading…':'Photo'}<input className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={async e=>{const file=e.target.files?.[0];if(!file)return;setBusy(true);try{const form=new FormData();form.set('file',file);await api.post(`${apiClient.base}photo?studentId=${encodeURIComponent(studentId)}`,form,{headers:apiClient.headers})}finally{setBusy(false)}}}/></label>}
 function TransitionForm({ student, lookup, close }: { student: ManagedStudent; lookup: Lookup; close: () => void }) {

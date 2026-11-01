@@ -1,6 +1,5 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 import { Alert, Badge, EmptyState } from '@/components/ui/Feedback'
 import { Icon } from '@/components/ui/Icon'
@@ -10,38 +9,40 @@ import { useScope } from '@/components/staff/ScopeProvider'
 import { ApiClientError, api, errorMessage, query } from '@/lib/client/api'
 import { formatCount, formatDate } from '@/lib/client/format'
 import { useApi } from '@/lib/client/useApi'
-import type { CreatedSchool, SchoolList } from '@/lib/client/types'
+import type { CreatedSchool, School, SchoolList } from '@/lib/client/types'
 
 /**
  * Tenant administration — SUPER_ADMIN only (`requireSuperAdmin`).
  *
- * Opening a school sets the shared signed SMS selection before entering its dashboard.
- * CBT receives that same selection from the authenticated shell.
+ * Platform administrators onboard schools and control their access status.
  */
 export function SchoolsAdmin() {
-  const router = useRouter()
-  const { isSuperAdmin, schoolId } = useScope()
+  const { isSuperAdmin } = useScope()
 
   const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('all')
+  const [page, setPage] = useState(1)
   const [createOpen, setCreateOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [openingId, setOpeningId] = useState<string | null>(null)
-  const [selectionError, setSelectionError] = useState<string | null>(null)
+  const [changingId, setChangingId] = useState<string | null>(null)
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   const { data, error, loading, refetch } = useApi<SchoolList>(
-    `/api/schools${query({ pageSize: 100, search: search.trim() || undefined })}`,
+    `/api/schools${query({ page, pageSize: 20, search: search.trim() || undefined, isActive: status === 'all' ? undefined : status === 'active' })}`,
   )
 
-  async function openSchool(id: string) {
-    setOpeningId(id)
-    setSelectionError(null)
+  async function changeStatus(school: School) {
+    setChangingId(school.id)
+    setStatusError(null)
     try {
-      await api.post('/api/sms/staff/school-context', { schoolId: id })
-      router.push('/sms/staff')
-      router.refresh()
+      await api.patch(`/api/schools/${school.id}`, { isActive: !school.isActive })
+      setNotice(`${school.name} ${school.isActive ? 'paused' : 'reactivated'}.`)
+      if (status !== 'all') setPage(1)
+      refetch()
     } catch (error) {
-      setSelectionError(errorMessage(error))
-      setOpeningId(null)
+      setStatusError(errorMessage(error))
+    } finally {
+      setChangingId(null)
     }
   }
 
@@ -61,7 +62,7 @@ export function SchoolsAdmin() {
             Schools
           </h1>
           <p className="mt-1 font-body-md text-body-md text-on-surface-variant">
-            Every tenant on the platform. Pick one to work inside it.
+            Onboard schools and pause or reactivate their access.
           </p>
         </div>
 
@@ -77,10 +78,10 @@ export function SchoolsAdmin() {
         </Alert>
       ) : null}
 
-      {selectionError ? <Alert tone="danger">{selectionError}</Alert> : null}
+      {statusError ? <Alert tone="danger">{statusError}</Alert> : null}
 
-      <div className="card p-4">
-        <div className="relative">
+      <div className="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
           <Icon
             name="search"
             size={20}
@@ -89,12 +90,17 @@ export function SchoolsAdmin() {
           <input
             type="search"
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => { setSearch(event.target.value); setPage(1) }}
             placeholder="Search by name or slug"
             aria-label="Search schools"
             className="w-full rounded-full border-none bg-surface-container py-2 pl-10 pr-4 font-body-md text-body-md text-on-surface outline-none focus:ring-2 focus:ring-primary-container"
           />
         </div>
+        <label className="flex items-center gap-3 text-sm font-medium">School status
+          <select className="field w-auto" value={status} onChange={event => { setStatus(event.target.value); setPage(1) }}>
+            <option value="all">All schools</option><option value="active">Active</option><option value="paused">Paused</option>
+          </select>
+        </label>
       </div>
 
       {error ? (
@@ -111,19 +117,17 @@ export function SchoolsAdmin() {
       ) : data && data.schools.length > 0 ? (
         <div className="grid grid-cols-1 gap-gutter lg:grid-cols-2">
           {data.schools.map((school) => {
-            const active = school.id === schoolId
-
             return (
               <div
                 key={school.id}
-                className={`card p-6 ${active ? 'border-primary-container ring-2 ring-primary-container/30' : ''}`}
+                className="card p-6"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <h2 className="truncate font-headline-md text-headline-md text-on-surface">
                       {school.name}
                     </h2>
-                    <p className="font-body-md text-body-md text-on-surface-variant">
+                    <p className="break-words font-body-md text-body-md text-on-surface-variant">
                       <code>{school.slug}</code>
                       {school.address ? ` · ${school.address}` : ''}
                     </p>
@@ -131,17 +135,14 @@ export function SchoolsAdmin() {
 
                   <div className="flex shrink-0 flex-col items-end gap-2">
                     <Badge tone={school.isActive ? 'success' : 'danger'}>
-                      {school.isActive ? 'Active' : 'Inactive'}
+                      {school.isActive ? 'Active' : 'Paused'}
                     </Badge>
-                    {active ? <Badge tone="primary">Selected</Badge> : null}
                   </div>
                 </div>
 
-                <dl className="mt-5 grid grid-cols-4 gap-3 border-t border-border-subtle pt-4">
+                <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-border-subtle pt-4">
                   <Stat label="Students" value={school._count.students} />
-                  <Stat label="Staff" value={school._count.users} />
-                  <Stat label="Exams" value={school._count.exams} />
-                  <Stat label="Servers" value={school._count.localServers} />
+                  <Stat label="Teachers" value={school._count.users} />
                 </dl>
 
                 <p className="mt-4 font-label-sm text-label-sm text-on-surface-variant">
@@ -150,24 +151,25 @@ export function SchoolsAdmin() {
 
                 <button
                   type="button"
-                  onClick={() => void openSchool(school.id)}
-                  disabled={openingId !== null}
-                  className="btn-primary mt-4 w-full"
+                  onClick={() => void changeStatus(school)}
+                  disabled={changingId !== null}
+                  aria-label={`${school.isActive ? 'Pause school' : 'Reactivate school'}: ${school.name}`}
+                  className="btn-secondary mt-4 w-full"
                 >
-                  <Icon name="login" size={20} />
-                  {openingId === school.id ? 'Opening school…' : active ? 'Continue in this school' : 'Work in this school'}
+                  <Icon name={school.isActive ? 'pause_circle' : 'play_circle'} size={20} />
+                  {changingId === school.id ? 'Saving…' : school.isActive ? 'Pause school' : 'Reactivate school'}
                 </button>
               </div>
             )
           })}
         </div>
-      ) : (
+      ) : data ? (
         <div className="card">
           <EmptyState
             icon="apartment"
-            title={search ? 'No schools match that search' : 'No schools yet'}
+            title={search || status !== 'all' ? 'No schools match these filters' : 'No schools yet'}
             description={
-              search ? 'Try a different name or slug.' : 'Onboard the first school to get started.'
+              search || status !== 'all' ? 'Try another search or school status.' : 'Onboard the first school to get started.'
             }
             action={
               <button type="button" onClick={() => setCreateOpen(true)} className="btn-primary">
@@ -177,7 +179,13 @@ export function SchoolsAdmin() {
             }
           />
         </div>
-      )}
+      ) : null}
+
+      {data && data.meta.totalPages > 1 ? <nav aria-label="School directory pages" className="flex flex-wrap items-center gap-3">
+        <button type="button" className="btn-secondary" disabled={loading || page <= 1} onClick={() => setPage(page - 1)}>Previous schools</button>
+        <span className="text-sm">Page {page} of {data.meta.totalPages}</span>
+        <button type="button" className="btn-secondary" disabled={loading || page >= data.meta.totalPages} onClick={() => setPage(page + 1)}>Next schools</button>
+      </nav> : null}
 
       <p className="font-label-sm text-label-sm text-on-surface-variant">
         A school&apos;s slug cannot be changed after onboarding — offline hall servers cache it
@@ -189,11 +197,10 @@ export function SchoolsAdmin() {
         onClose={() => setCreateOpen(false)}
         onCreated={(created) => {
           setCreateOpen(false)
-          setNotice(
-            created.school.admin
-              ? `${created.school.name} onboarded, with ${created.school.admin.email} as its school administrator.`
-              : `${created.school.name} onboarded. It has no administrator yet, so nobody can sign in to it.`,
-          )
+          setNotice(`${created.school.name} onboarded, with ${created.school.admin.email} as its school administrator.`)
+          setPage(1)
+          setSearch('')
+          setStatus('all')
           refetch()
         }}
       />
@@ -222,7 +229,6 @@ function CreateSchoolModal({
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [address, setAddress] = useState('')
-  const [withAdmin, setWithAdmin] = useState(true)
   const [adminName, setAdminName] = useState('')
   const [adminEmail, setAdminEmail] = useState('')
   const [adminPassword, setAdminPassword] = useState('')
@@ -246,9 +252,7 @@ function CreateSchoolModal({
         // `.strict()` rejects unknown keys, and an empty string fails the URL/length
         // checks — so optional fields are omitted rather than sent blank.
         ...(address.trim() ? { address: address.trim() } : {}),
-        ...(withAdmin
-          ? { admin: { fullName: adminName, email: adminEmail, password: adminPassword } }
-          : {}),
+        admin: { fullName: adminName, email: adminEmail, password: adminPassword },
       })
 
       setName('')
@@ -325,24 +329,7 @@ function CreateSchoolModal({
           />
         </div>
 
-        <label className="flex cursor-pointer items-start gap-3 border-t border-border-subtle pt-4">
-          <input
-            type="checkbox"
-            checked={withAdmin}
-            onChange={(event) => setWithAdmin(event.target.checked)}
-            className="mt-0.5 h-5 w-5 accent-[#4a6700]"
-          />
-          <span>
-            <span className="block font-label-md text-label-md text-on-surface">
-              Create its first school administrator
-            </span>
-            <span className="block font-label-sm text-label-sm text-on-surface-variant">
-              Without one, nobody can sign in to the school. Created in the same transaction.
-            </span>
-          </span>
-        </label>
-
-        {withAdmin ? (
+        <p className="border-t border-border-subtle pt-4 text-sm text-on-surface-variant">Create the first school administrator to complete onboarding. They will configure and manage the school.</p>
           <div className="space-y-4 rounded-lg bg-surface-container-low p-4">
             <div>
               <label htmlFor="admin-name" className="mb-1 block font-label-md text-label-md text-on-surface-variant">
@@ -404,7 +391,6 @@ function CreateSchoolModal({
               )}
             </div>
           </div>
-        ) : null}
 
         <button type="submit" disabled={busy} className="btn-primary w-full">
           {busy ? <Spinner size={20} /> : <Icon name="apartment" size={20} />}

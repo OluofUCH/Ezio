@@ -3,8 +3,10 @@ import type { TenantDb } from '@/lib/tenant'
 import { isSchoolAdmin } from '@/src/modules/shared/access'
 import { attendanceTotals, studentAttendance } from '@/src/modules/attendance/service'
 import { ownReports } from '@/src/modules/results/service'
+import { assertStaffScope } from '@/src/modules/shared/authorization'
 
 export async function staffLookups(ctx: ScopedStaffContext) {
+  assertStaffScope(ctx)
   const [sessions, arms, subjects, teachers, components, assignments] = await Promise.all([
     ctx.db.academicSession.findMany({ include: { terms: { orderBy: { orderIndex: 'asc' } } }, orderBy: { startDate: 'desc' } }),
     ctx.db.classArm.findMany({ where: isSchoolAdmin(ctx.session.role) ? {} : { OR: [{ formTeacherId: ctx.session.userId }, { teachingAssignments: { some: { teacherId: ctx.session.userId, isActive: true } } }] }, orderBy: [{ level: 'asc' }, { name: 'asc' }] }),
@@ -17,6 +19,7 @@ export async function staffLookups(ctx: ScopedStaffContext) {
 }
 
 export async function staffDashboard(ctx: ScopedStaffContext) {
+  assertStaffScope(ctx)
   const totals = isSchoolAdmin(ctx.session.role) ? await Promise.all([
     ctx.db.student.count(),
     ctx.db.user.count({ where: { role: { in: ['SCHOOL_ADMIN', 'TEACHER'] } } }),

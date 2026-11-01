@@ -1,6 +1,6 @@
 # Ezio Nigeria — Site navigation & workflow guide
 
-School management is the main workspace. CBT is the exam module inside it. Parents can view their children's published results, exchange comments with the form teacher and read school notices. This guide covers school setup, daily work, fee records, automatic guardian onboarding and the separate offline hall workflow.
+School management is the workspace for school accounts, with CBT as its exam module. Super Admin has a separate platform dashboard for school onboarding and access status. Parents can view their children's published results, exchange comments with the form teacher and read school notices. This guide covers platform administration, school setup, form-teacher admissions, full roster imports, guardian onboarding and the separate offline hall workflow. In school workflows, “administrator” means School Admin.
 
 ## 1. Sign in and find your way
 
@@ -12,29 +12,30 @@ School management is the main workspace. CBT is the exam module inside it. Paren
 2. **Admin / Teacher:** enter your institutional email and password.
 3. **Student:** enter your school code, registration number and PIN. Keep any leading zeros in the PIN.
 4. **Parent:** enter the school code, guardian phone number and parent PIN. New accounts start with **1234**; use the updated PIN after a reset. Local and +234 phone formats are accepted.
-5. Select **Sign in**. Staff and students arrive at their **School dashboard**. Parents arrive at **Child results**.
-6. Super Admin chooses a school before opening school-specific records. Other accounts already belong to their school.
+5. Select **Sign in**. Super Admin arrives at **Platform dashboard**. School Admin, teachers and students arrive at **School dashboard**. Parents arrive at **Child results**.
+6. School accounts work inside the school attached to their login. Super Admin manages onboarding and access status from the platform workspace.
 
 ### Use the navigation
 
 - **School dashboard** takes staff and students back to their school overview.
+- Super Admin uses **Platform dashboard**, **Schools** and **My account**.
 - **CBT** expands the staff or student exam submenu. Select a submenu item to open an exam tool. The same school navigation stays available.
 - Parents use **Child results**, **Teacher comments** and **School notices**. Select the child's name before reviewing a report or writing a comment.
 - On a phone or narrow screen, select **Open navigation** in the top bar. Choose a destination or use **Close navigation**. Escape also closes the menu.
 - The selected page is highlighted. The CBT submenu opens automatically on its pages.
 - **My account** lets staff change their password. **Log out** is at the bottom of the navigation.
 
-Staff and students signing in from an old CBT bookmark still open SMS first. Open **CBT** to continue to exams. A running exam has its own focused screen, without the school sidebar.
+School staff and students signing in from an old CBT bookmark still open SMS first. Open **CBT** to continue to exams. Super Admin is directed to the platform dashboard. A running exam has its own focused screen, without the school sidebar.
 
 ### Two different kinds of results
 
-**CBT exam results** describe individual exam attempts. **SMS report cards** combine a term's assessment components and subjects. A CBT result becomes a report-card component only after an authorized staff member imports it.
+**CBT exam results** cover individual attempts. **SMS report cards** combine term assessments and subjects. Import CBT marks to include them in a term report.
 
 ## 2. What each role can navigate
 
 ### Super Admin
 
-Start at **School dashboard**, select a school, then manage its SMS and CBT work. **Schools** opens the school directory and onboarding form. The selected school carries into CBT; check the school name before working.
+Start at **Platform dashboard** to review **Total schools**, **Total students**, **Total teachers**, **Active schools** and **Paused schools**. Open **Schools** to onboard a school or pause/reactivate its access. Use **My account** to change your own password. School operations require a School Admin or teacher account; platform accounts cannot open SMS records, manage school staff or run CBT exams.
 
 ### School Admin
 
@@ -44,7 +45,7 @@ Expand **CBT** for **Overview**, **Exams**, **Candidates**, **Hall servers** and
 
 ### Teacher
 
-Start at **School dashboard**. Open **Attendance** and **Fees** for your form classes. Use **Parent comments** to exchange comments with parents of children in those classes. Open **Score entry** for your assigned class/subject/session combinations, **Report cards** for permitted classes, and **Staff notices** to read notices.
+Start at **School dashboard**. Form teachers see **My students**, where they can admit students or import a roster into their assigned form class arms, including guardian details. Open **Attendance** and **Fees** for your form classes. Use **Parent comments** to exchange comments with parents of children in those classes. Open **Score entry** for your assigned class/subject/session combinations, **Report cards** for permitted classes, and **Staff notices** to read notices.
 
 Expand **CBT** for **Overview**, **Exams**, **Candidates** and **Import CBT scores**. Importing marks requires the relevant SMS teaching assignment. Teachers do not manage school setup, staff accounts or hall servers.
 
@@ -61,7 +62,8 @@ Start at **Child results** to view or download a linked child's published report
 ### Your normal working flow
 
 - **Administrator:** School dashboard → review student/staff totals → complete student guardian profiles → review Fees and Parent accounts → publish results and School notices.
-- **Form teacher:** School dashboard → Attendance → Fees → Parent comments → enter and submit marks for assigned subjects.
+- **Super Admin:** Platform dashboard → Schools → onboard, pause or reactivate a school.
+- **Form teacher:** School dashboard → My students for new admissions → Attendance → Fees → Parent comments → enter and submit marks for assigned subjects.
 - **Subject teacher:** School dashboard → Score entry for assigned subjects → submit completed marks → read Staff notices.
 - **Student:** School dashboard → CBT → My exams → complete the paper → Exam results → return to School dashboard for published term reports.
 - **Parent:** Child results → choose a child → view or download a report → Teacher comments → send a comment or read a reply. See section 14 for the steps.
@@ -70,15 +72,19 @@ Start at **Child results** to view or download a linked child's published report
 
 **For:** Super Admin and School Admin.
 
-### Create or choose the school
+### Onboard the school
 
-Super Admin opens **Schools → Onboard a school**, enters the name, permanent school code and optional address, and can create the first School Admin in the same form. Select **Work in this school** to enter its SMS dashboard. Existing schools can also be selected on **School dashboard** using **Find a school**, **School to manage**, then **Use this school**.
+Super Admin opens **Schools → Onboard a school**, enters the name, permanent school code and optional address, and supplies the first School Admin's name, email and temporary password. The school and administrator are created together. Give the administrator their credentials so they can sign in and complete school setup.
 
-School Admin starts inside their own school. Share the school code with students and parents for sign-in. On a fresh installation, Super Admin onboards the first school.
+School Admin starts inside their own school. Share the school code with students and parents for sign-in. The school code remains fixed after onboarding.
+
+### Pause or reactivate a school
+
+Super Admin opens **Schools**, searches by name or school code, and can filter by **School status**. Select **Pause school** to stop cloud access for that school's accounts and hall synchronization. The next request from an existing session also checks this status. Select **Reactivate school** to restore access while retaining the school's records and credentials. A hall already operating offline continues using its downloaded data until it reconnects.
 
 A **class level** is a year group, such as Primary 2 or JSS 1. A **class arm** is a group within that level, such as A or B. Primary 2 A and Primary 2 B are separate arms.
 
-### Configure in this order
+### School Admin: configure in this order
 
 1. **Academic calendar:** create the academic session with its actual start and end dates. Add the terms and their order. Each term belongs inside its session; term dates must not overlap.
 2. **Classes & subjects:** choose the levels your school uses from **Nursery 1–2**, **Primary 1–6**, **JSS 1–3** and **SS 1–3**. Add A, B, C or other arm names where those groups exist.
@@ -94,7 +100,7 @@ For an existing school's session rollover, follow section 5.
 
 ## 4. Manage staff and teaching assignments
 
-**For:** Super Admin and School Admin.
+**For:** School Admin.
 
 ### Staff & assignments
 
@@ -102,11 +108,11 @@ For an existing school's session rollover, follow section 5.
 2. Use **Profile** to record a teacher's phone number and qualifications.
 3. Under **Teaching assignments**, select **Add assignment**. Choose the teacher, subject, class arm and academic session, then save.
 4. Repeat for each class/subject the teacher teaches. An assignment to one arm does not automatically authorize every arm in that level.
-5. Under **Form teachers**, choose an active teacher for an arm and select **Save form teacher**. This designation gives the teacher access to the arm's attendance, fee records and parent conversations.
+5. Under **Form teachers**, choose an active teacher for an arm and select **Save form teacher**. This designation gives the teacher admission, attendance, fee-record and parent-conversation access for that arm.
 
 Teacher accounts must be active before they can receive or use assignments. Deactivate assignments that should stop granting access; their history is retained.
 
-A subject teaching assignment grants score-entry access for its class, subject and session. The form-teacher designation grants the class-wide attendance, fees and parent-comment workflows. Assign both where the same teacher performs both jobs.
+A subject teaching assignment grants score-entry access for its class, subject and session. The form-teacher designation grants admissions, attendance, fees and parent-comment workflows for its arm. A subject assignment alone does not grant admission access. Assign both where the same teacher performs both jobs.
 
 ### Staff accounts
 
@@ -120,25 +126,28 @@ Every staff role can open **My account** and change their own password using the
 
 ## 5. Admit and place students
 
-**For:** Super Admin and School Admin.
+**For:** School Admin and assigned form teachers.
 
 ### Add one student
 
-With an active session, open **Students → Admit student**. Enter the admission number, full name and arm. Supply a student PIN or leave it blank to generate one. You can add date of birth, gender, address and guardian details in this same form.
+With an active session, School Admin opens **Students → Admit student**; form teachers open **My students → Admit student**. Enter the admission number, full name and arm. Form teachers can choose only arms where they are designated form teacher. Supply a student PIN or leave it blank to generate one. Add date of birth, gender, address, guardian name, relationship, phone and email in the same form.
 
-Fill **Guardian name** and **Guardian phone** for automatic parent access. **CBT → Candidates** lets administrators retrieve or reset student PINs.
+Fill **Guardian name** and **Guardian phone** for automatic parent access. The confirmation shows the newly admitted student's PIN and the guardian-onboarding result. Give the credentials to the student and guardian. **CBT → Candidates** lets School Admin retrieve or reset student PINs later; teachers cannot retrieve existing PINs.
 
 ### Import a roster
 
-1. Select **Download sample roster** on Students, or **Download sample CSV** inside Import roster. Replace the examples with your students, keeping the **regNumber**, **fullName**, **classLevel**, **pin** and **arm** columns.
-2. Use **NURSERY1–NURSERY2**, **PRIMARY1–PRIMARY6**, **JSS1–JSS3** or **SS1–SS3**. For example, Primary 3 A uses classLevel PRIMARY3 and arm A. Format registration numbers and PINs as text in Excel to keep leading zeros.
-3. Open **Students → Import roster**, choose the file and select **Preview**.
-4. Fix reported rows and preview again. Duplicate registration numbers in the school block the batch.
-5. Select **Import** and review the resulting roster. A missing arm uses the default arm for that class level.
+1. Select **Download sample roster** on Students or My students, or **Download .csv template** inside Import roster. Replace the sample rows with your students. The columns are **regNumber**, **fullName**, **classLevel**, **pin**, **arm**, **dateOfBirth**, **gender**, **address**, **guardianName**, **guardianRelationship**, **guardianPhone** and **guardianEmail**.
+2. Use **NURSERY1–NURSERY2**, **PRIMARY1–PRIMARY6**, **JSS1–JSS3** or **SS1–SS3**. For example, Primary 3 A uses classLevel PRIMARY3 and arm A. Keep registration numbers, PINs and guardian phones as text in Excel to preserve leading zeros. Leave pin blank to generate it.
+3. Use **YYYY-MM-DD** for dates of birth in a CSV, or a date-formatted cell in XLSX/XLS. Guardian phones accept local Nigerian or international formats. Save addresses containing commas in one quoted CSV field; spreadsheet exports handle the quoting.
+4. Open **Import roster** and choose or drop the file. It is checked automatically and a preview appears. Expand **Review details** to inspect the profile and guardian fields for a row.
+5. Fix reported rows and upload again. Invalid dates, phone numbers or emails, duplicate admission numbers and unauthorized arms block the entire batch. An incomplete guardian name/phone produces a warning; that student can still be imported.
+6. Select **Enrol … students**. Students, profiles, placements and guardian links are saved together. Review the guardian summary and select **Download credential slips (CSV)** for the new student PINs and initial PINs for newly created parent accounts.
+
+Every form-teacher import row must name an assigned form class arm. School Admin can omit an arm to use the level's default arm when a session is active. The older three-column roster format remains supported for School Admin. Both SMS and CBT roster imports save the same profile and guardian details.
 
 ### Profiles and changes
 
-Use **Profile** to update details or complete guardian information after a roster import. Saving a guardian name and phone creates or links the parent account. Use **Photo** for JPEG, PNG or WebP images up to 2 MB.
+School Admin uses **Profile** to update details or complete guardian information after admission. Saving a guardian name and phone creates or links the parent account. Use **Photo** for JPEG, PNG or WebP images up to 2 MB. Form teachers' My students list contains their current active form-class students; profile edits and placement changes are handled by School Admin.
 
 **Placement** sets the session, arm and effective date. **Promotion** moves up one level; **Repeat** keeps it. **Transfer** moves within a level, or **OUT** leaves the school. **Withdrawal** keeps history but ends active participation. Finish open CBT attempts first.
 
@@ -148,11 +157,11 @@ Levels progress through Nursery 1–2, Primary 1–6, JSS 1–3 and SS 1–3. Pr
 
 ## 6. Automatic parent accounts
 
-**For:** Super Admin and School Admin.
+**For:** School Admin and form teachers during admission/import. Parent-account management is for School Admin.
 
 ### Save the student's guardian details
 
-1. Open **Students → Admit student**, or open an existing student's **Profile**.
+1. Open **Students → Admit student** as School Admin or **My students → Admit student** as a form teacher. School Admin can also open an existing student's **Profile**. Roster imports support the same guardian fields.
 2. Enter **Guardian name** and **Guardian phone**. You can also record the guardian's relationship and email.
 3. Save the form. The student, profile and guardian link are saved together. A new parent account starts with PIN **1234**.
 4. Give the parent the school code, their guardian phone number and their PIN. They select **Parent** on the sign-in page.
@@ -165,7 +174,7 @@ If the parent account already exists, its current PIN stays unchanged. If either
 
 ### Review accounts and access
 
-Open **Parent accounts** to search by parent or student name and review the linked children.
+School Admin opens **Parent accounts** to search by parent or student name and review the linked children.
 
 - **Edit details / reset PIN:** update contact details or set a new PIN. Leave the PIN field blank to keep it, then select **Save parent details**.
 - **Deactivate** stops access for the parent account. **Reactivate** lets the parent sign in again with its current PIN.
@@ -194,7 +203,7 @@ Students see their own term attendance summary on **School dashboard**. Staff ca
 
 ## 8. Record and review fees
 
-**For:** Form teachers, School Admin and Super Admin.
+**For:** Form teachers and School Admin.
 
 Use **Fees** to record whether a student's fees have been paid through the school's usual payment arrangements. The page tracks **Paid** or **Owing**; it does not collect online payments.
 
@@ -409,6 +418,10 @@ For a forgotten parent PIN or incorrect child link, contact the school administr
 
 ## 15. Dashboards, notices and daily routines
 
+### Platform dashboard
+
+Super Admin sees totals for schools, registered students and teacher accounts across the platform. Counts include paused schools and deactivated teacher accounts. School Admin and parent accounts are excluded from the teacher total. **Active schools** and **Paused schools** add up to **Total schools**. Open **Manage schools** for onboarding and access-status controls.
+
 ### School dashboard
 
 On **School dashboard**, **Total students** counts registered student records. **Total staff** counts School Admin and teacher accounts, including deactivated accounts. Parent accounts are not staff.
@@ -430,9 +443,9 @@ For a class audience, select **Class arm**; for a staff-role audience, select **
 ### A practical staff routine
 
 1. Confirm your name and school, then review School dashboard and the notices for your role.
-2. Form teachers record attendance, update confirmed fee payments and check Parent comments.
+2. Form teachers use My students for admissions, record attendance, update confirmed fee payments and check Parent comments.
 3. Administrators review Fees, student guardian profiles and parent-account access.
-4. Use Score entry for marks and CBT for exams. Save and review before changing class, term or school.
+4. Use Score entry for marks and CBT for exams. Save and review before changing class or term.
 5. Administrators approve and publish completed reports. Log out when finished on a shared device.
 
 ## 16. Troubleshooting
@@ -441,8 +454,11 @@ For a class audience, select **Class arm**; for a staff-role audience, select **
 
 - **The wrong sign-in fields appear:** select Student, Admin / Teacher or Parent before entering credentials.
 - **A parent cannot sign in:** confirm the school code and guardian phone. New accounts use PIN 1234; an existing account may have a different PIN. Ask the administrator to check account status or reset it.
-- **Choose a school first:** Super Admin should return to School dashboard and use the school selector.
-- **The school selection changed:** reload the affected tab, confirm the school name, then repeat the intended action.
+- **A platform account returns to Platform dashboard:** school records require a School Admin or teacher login. Super Admin manages onboarding and pause/reactivation under Schools.
+- **The school or account context changed:** reload the affected tab, confirm your account and school, then repeat the intended action.
+- **A school is paused:** Super Admin can use Schools → Reactivate school to restore cloud access.
+- **My students is missing for a teacher:** School Admin should assign them as form teacher under Staff & assignments. A subject assignment alone does not allow admissions.
+- **An admission or import rejects an arm:** use a current assigned form arm. Assignments are checked again when saving, even if a previous preview succeeded.
 - **No student placement appears:** an administrator should check the active session and the student's enrollment.
 - **A class/subject is missing for a teacher:** check the active account, academic-session assignment and form-teacher designation.
 
@@ -470,11 +486,13 @@ For a class audience, select **Class arm**; for a staff-role audience, select **
 
 ### Staff page paths
 
+- Platform dashboard (Super Admin): `/staff/platform`
+- Schools (Super Admin): `/staff/schools`
 - School dashboard: `/sms/staff`
 - Academic calendar: `/sms/staff/calendar`
 - Classes & subjects: `/sms/staff/classes-subjects`
 - Staff & assignments: `/sms/staff/teachers`
-- Students: `/sms/staff/students`
+- Students (School Admin) / My students (form teachers): `/sms/staff/students`
 - Parent accounts: `/sms/staff/parents`
 - Assessment setup: `/sms/staff/assessment`
 - Attendance / Score entry / Report cards: `/sms/staff/attendance`, `/sms/staff/scores`, `/sms/staff/reports`
@@ -483,7 +501,7 @@ For a class audience, select **Class arm**; for a staff-role audience, select **
 - School notices (administrators) / Staff notices (teachers): `/sms/staff/announcements`
 - CBT Overview / Exams / Candidates: `/staff`, `/staff/exams`, `/staff/students`
 - CBT Hall servers / Import CBT scores: `/staff/local-servers`, `/sms/staff/bridge`
-- Schools / Staff accounts / My account: `/staff/schools`, `/staff/teachers`, `/staff/account`
+- Staff accounts / My account: `/staff/teachers`, `/staff/account`
 
 ### Student page paths
 
@@ -498,4 +516,4 @@ For a class audience, select **Class arm**; for a staff-role audience, select **
 - Teacher comments: `/sms/parent/comments`
 - School notices: `/sms/parent/notices`
 
-Paths are relative to your school's Ezio website. Use the navigation for normal work; access depends on your signed-in role. Existing CBT paths remain available inside the SMS workspace.
+Paths are relative to the school's website. Access follows your signed-in role.

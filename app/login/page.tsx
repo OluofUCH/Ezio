@@ -14,7 +14,7 @@ export default async function LoginPage({
 }) {
   const params = await searchParams;
 
-  // Successful sign-in always opens the role's SMS dashboard. Legacy `next`
+  // Successful sign-in opens the role's platform or school dashboard. Legacy `next`
   // parameters cannot bypass that entry point or redirect outside the site.
   const initialTab = params.as === "parent" ? "parent" : params.as === "staff" ? "staff" : "student";
 

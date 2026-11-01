@@ -1,31 +1,40 @@
 import { cache } from 'react'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getStaffContext, getStudentContext, getParentContext } from '@/lib/auth/rsc'
-import { ApiError } from '@/lib/errors'
 import { resolveSmsStaff } from './school-context'
-import { SMS_SCHOOL_COOKIE } from './school-scope-token'
+import { portalHome } from './navigation'
 
-export const getSmsStaffPageContext = cache(async () => {
+export const getStaffPageContext = cache(async () => {
   const staff = await getStaffContext()
   if (!staff) redirect('/login?as=staff')
-  const user = { ...staff.user, role: staff.user.role }
-  const token = (await cookies()).get(SMS_SCHOOL_COOKIE)?.value
-  try {
-    const context = await resolveSmsStaff(staff.session, token)
-    return { user, school: context.school }
-  } catch (error) {
-    if (user.role === 'SUPER_ADMIN' && error instanceof ApiError &&
-        ['FORBIDDEN', 'CONFLICT', 'NOT_FOUND'].includes(error.code)) {
-      return { user, school: null }
-    }
-    throw error
-  }
+  const isFormTeacher = staff.user.role === 'TEACHER' && Boolean(await staff.db?.classArm.findFirst({
+    where: { formTeacherId: staff.user.id }, select: { id: true },
+  }))
+  return { ...staff, isFormTeacher }
+})
+
+export const getPlatformPageContext = cache(async () => {
+  const context = await getStaffPageContext()
+  if (context.user.role !== 'SUPER_ADMIN') redirect(portalHome(context.user.role))
+  return context
+})
+
+export const getSmsStaffPageContext = cache(async () => {
+  const staff = await getStaffPageContext()
+  if (staff.user.role === 'SUPER_ADMIN') redirect(portalHome(staff.user.role))
+  const context = await resolveSmsStaff(staff.session)
+  return { user: staff.user, school: context.school, isFormTeacher: staff.isFormTeacher }
 })
 
 export const getSmsPageContext = cache(async () => {
   const context = await getSmsStaffPageContext()
   if (context.user.role === 'TEACHER') redirect('/sms/staff')
+  return context
+})
+
+export const getSmsAdmissionsPageContext = cache(async () => {
+  const context = await getSmsStaffPageContext()
+  if (context.user.role === 'TEACHER' && !context.isFormTeacher) redirect('/sms/staff')
   return context
 })
 

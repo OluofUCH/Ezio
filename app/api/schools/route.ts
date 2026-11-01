@@ -47,7 +47,7 @@ export const GET = route(async (req) => {
         logoUrl: true,
         isActive: true,
         createdAt: true,
-        _count: { select: { users: true, students: true, exams: true, localServers: true } },
+        _count: { select: { users: { where: { role: 'TEACHER' } }, students: true } },
       },
     }),
     unscopedDb.school.count({ where }),
@@ -57,7 +57,7 @@ export const GET = route(async (req) => {
 })
 
 /**
- * POST /api/schools — onboard a tenant, optionally with its first School Admin.
+ * POST /api/schools — onboard a tenant with its first School Admin.
  *
  * Both records are created in one transaction. A school with no administrator is a
  * tenant nobody can log into (PRD §3.1 expects the admin to add teachers and
@@ -73,21 +73,19 @@ export const POST = route(async (req) => {
   // constraint violation is mapped to a 409 by `lib/api.ts`.
   const [slugTaken, emailTaken] = await Promise.all([
     unscopedDb.school.findUnique({ where: { slug: input.slug }, select: { id: true } }),
-    input.admin
-      ? unscopedDb.user.findUnique({ where: { email: input.admin.email }, select: { id: true } })
-      : Promise.resolve(null),
+    unscopedDb.user.findUnique({ where: { email: input.admin.email }, select: { id: true } }),
   ])
 
   if (slugTaken) {
     throw conflict(`The slug "${input.slug}" is already in use by another school.`, 'ALREADY_EXISTS')
   }
   if (emailTaken) {
-    throw conflict(`A user with the email ${input.admin?.email} already exists.`, 'ALREADY_EXISTS')
+    throw conflict(`A user with the email ${input.admin.email} already exists.`, 'ALREADY_EXISTS')
   }
 
   // Hashed outside the transaction: bcrypt at cost 12 takes ~200ms, and holding a
   // database transaction open for that long for no reason wastes a pooled connection.
-  const passwordHash = input.admin ? await hashPassword(input.admin.password) : null
+  const passwordHash = await hashPassword(input.admin.password)
 
   const school = await unscopedDb.$transaction(async (tx) => {
     const createdSchool = await tx.school.create({
@@ -100,19 +98,16 @@ export const POST = route(async (req) => {
       select: { id: true, name: true, slug: true, address: true, logoUrl: true, isActive: true, createdAt: true },
     })
 
-    let admin = null
-    if (input.admin && passwordHash) {
-      admin = await tx.user.create({
-        data: {
-          schoolId: createdSchool.id,
-          email: input.admin.email,
-          passwordHash,
-          fullName: input.admin.fullName,
-          role: 'SCHOOL_ADMIN',
-        },
-        select: { id: true, email: true, fullName: true, role: true },
-      })
-    }
+    const admin = await tx.user.create({
+      data: {
+        schoolId: createdSchool.id,
+        email: input.admin.email,
+        passwordHash,
+        fullName: input.admin.fullName,
+        role: 'SCHOOL_ADMIN',
+      },
+      select: { id: true, email: true, fullName: true, role: true },
+    })
 
     return { ...createdSchool, admin }
   })

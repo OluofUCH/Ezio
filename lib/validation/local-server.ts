@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { idSchema, paginationSchema } from '@/lib/validation/common'
 
 /* ------------------------------------------------------------------ *
- * Local servers (SCHOOL_ADMIN / SUPER_ADMIN — PRD §2)
+ * Local servers (SCHOOL_ADMIN)
  *
  * A teacher creates exams; provisioning hall hardware is the School Admin's job, so
  * these are gated by `canManageSchool` rather than plain `requireSchoolScope`.

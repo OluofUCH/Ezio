@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { route } from '@/lib/api'
-import { requireStaff } from '@/lib/auth/session'
+import { requireSchoolScope } from '@/lib/auth/session'
 import { buildRosterTemplate } from '@/lib/import/templates'
 
 export const runtime = 'nodejs'
@@ -13,7 +13,7 @@ export const runtime = 'nodejs'
  * names when the admin opens it.
  */
 export const GET = route(async (req) => {
-  await requireStaff(req)
+  await requireSchoolScope(req)
 
   const csv = buildRosterTemplate()
 

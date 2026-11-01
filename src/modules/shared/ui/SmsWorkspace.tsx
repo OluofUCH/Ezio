@@ -21,11 +21,8 @@ export const structureKey = (userId: string, schoolId: string) => [...schoolData
 type Workspace = {
   user: SmsUser
   school: SmsSchool | null
-  switching: boolean
+  isFormTeacher: boolean
   scopeProblem: string | null
-  beginSelection: () => Promise<void>
-  finishSelection: (school: SmsSchool) => void
-  cancelSelection: () => void
   reportContextError: (error: unknown) => boolean
 }
 const WorkspaceContext = createContext<Workspace | null>(null)
@@ -36,7 +33,7 @@ export function useSmsWorkspace(): Workspace {
   return context
 }
 
-type Props = { user: SmsUser; initialSchool: SmsSchool | null; children: ReactNode }
+type Props = { user: SmsUser; initialSchool: SmsSchool | null; isFormTeacher?: boolean; children: ReactNode }
 
 export function SmsWorkspace(props: Props) {
   const [client] = useState(() => new QueryClient({ defaultOptions: {
@@ -46,23 +43,9 @@ export function SmsWorkspace(props: Props) {
   return <QueryClientProvider client={client}><WorkspaceBody {...props} /></QueryClientProvider>
 }
 
-function WorkspaceBody({ user, initialSchool, children }: Props) {
+function WorkspaceBody({ user, initialSchool: school, isFormTeacher = false, children }: Props) {
   const client = useQueryClient()
-  const [school, setSchool] = useState(initialSchool)
-  const [switching, setSwitching] = useState(false)
   const [scopeProblem, setScopeProblem] = useState<string | null>(null)
-  const beginSelection = useCallback(async () => {
-    setSwitching(true)
-    setScopeProblem(null)
-    await client.cancelQueries({ queryKey: schoolDataPrefix(user.id) })
-    client.removeQueries({ queryKey: schoolDataPrefix(user.id) })
-  }, [client, user.id])
-  const finishSelection = useCallback((selected: SmsSchool) => {
-    setSchool(selected)
-    setScopeProblem(null)
-    setSwitching(false)
-  }, [])
-  const cancelSelection = useCallback(() => setSwitching(false), [])
   const reportContextError = useCallback((error: unknown) => {
     if (!isContextError(error)) return false
     setScopeProblem(errorMessage(error))
@@ -70,13 +53,13 @@ function WorkspaceBody({ user, initialSchool, children }: Props) {
     client.removeQueries({ queryKey: schoolDataPrefix(user.id) })
     return true
   }, [client, user.id])
-  const value = useMemo(() => ({ user, school, switching, scopeProblem, beginSelection, finishSelection, cancelSelection, reportContextError }),
-    [user, school, switching, scopeProblem, beginSelection, finishSelection, cancelSelection, reportContextError])
+  const value = useMemo(() => ({ user, school, isFormTeacher, scopeProblem, reportContextError }),
+    [user, school, isFormTeacher, scopeProblem, reportContextError])
 
   return (
     <WorkspaceContext.Provider value={value}>
       <AppShell
-        nav={portalNavigation(user.role)}
+        nav={portalNavigation(user.role, { canAdmitStudents: isFormTeacher })}
         portalLabel={school?.name ?? 'School management'}
         userName={user.fullName}
         userMeta={`${user.role.replaceAll('_', ' ')} · ${user.email ?? user.regNumber ?? user.phone ?? ''}`}

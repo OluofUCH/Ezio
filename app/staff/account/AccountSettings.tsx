@@ -100,12 +100,13 @@ export function AccountSettings({
           <Row label="Name" value={fullName} />
           <Row label="Email" value={email} />
           <Row label="Role" value={<Badge tone={role === 'TEACHER' ? 'neutral' : 'info'}>{ROLE_LABELS[role]}</Badge>} />
-          <Row label="School" value={schoolName ?? 'Every school (platform admin)'} />
+          <Row label="School" value={schoolName ?? 'Platform account'} />
         </dl>
 
         <p className="mt-6 font-label-sm text-label-sm text-outline">
-          Your name, email and role are managed by a school administrator. Email in particular
-          is your sign-in identifier, so changing it is an account transfer rather than an edit.
+          {role === 'SUPER_ADMIN'
+            ? 'Your platform account manages school onboarding and access status.'
+            : 'Your name, email and role are managed by a school administrator. Your email is your sign-in identifier.'}
         </p>
       </section>
 

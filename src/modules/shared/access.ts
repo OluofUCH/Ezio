@@ -1,8 +1,9 @@
 import type { ScopedStaffContext } from '@/lib/auth/session'
 import { forbidden, notFound } from '@/lib/errors'
 import type { SchoolTransaction } from './transaction'
+import { assertStaffScope } from './authorization'
 
-export const isSchoolAdmin = (role: string) => role === 'SUPER_ADMIN' || role === 'SCHOOL_ADMIN'
+export const isSchoolAdmin = (role: string) => role === 'SCHOOL_ADMIN'
 export type ScopedDb = Pick<SchoolTransaction, 'classArm' | 'teachingAssignment' | 'term' | 'enrollment'>
 
 export async function ownTerm(db: ScopedDb, id: string) {
@@ -12,6 +13,7 @@ export async function ownTerm(db: ScopedDb, id: string) {
 }
 
 export async function assertArmAccess(context: ScopedStaffContext, armId: string, sessionId?: string, formOnly = false) {
+  assertStaffScope(context)
   const arm = await context.db.classArm.findFirst({ where: { id: armId } })
   if (!arm) throw notFound('Class arm not found.')
   if (isSchoolAdmin(context.session.role)) return arm
@@ -25,6 +27,7 @@ export async function assertArmAccess(context: ScopedStaffContext, armId: string
 }
 
 export async function assertSubjectAccess(context: ScopedStaffContext, armId: string, subjectId: string, sessionId: string, db: ScopedDb = context.db) {
+  assertStaffScope(context)
   if (isSchoolAdmin(context.session.role)) return
   if (context.session.role !== 'TEACHER' || !await db.teachingAssignment.findFirst({ where: {
     teacherId: context.session.userId, classArmId: armId, subjectId, academicSessionId: sessionId, isActive: true,

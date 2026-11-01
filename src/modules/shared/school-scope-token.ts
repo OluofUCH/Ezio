@@ -1,6 +1,8 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { configurationError, forbidden } from '@/lib/errors'
 
+// Legacy format retained for regression checks. School resolvers no longer
+// accept this cookie and the retired selection endpoint never issues it.
 export const SMS_SCHOOL_COOKIE = 'cbt_sms_school'
 export const SMS_SCHOOL_TTL = 8 * 60 * 60
 const ISSUER = 'cbt-sms-school'
@@ -12,7 +14,7 @@ function key(): Uint8Array {
   return new TextEncoder().encode(secret)
 }
 
-/** A school preference, not an authentication token. A live staff session is still required. */
+/** Reproduce a legacy preference token; it grants neither authentication nor school access. */
 export async function signSchoolScope(userId: string, schoolId: string): Promise<string> {
   return new SignJWT({ typ: 'sms-school', schoolId })
     .setProtectedHeader({ alg: 'HS256' })

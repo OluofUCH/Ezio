@@ -14,7 +14,7 @@ export const runtime = 'nodejs'
  *
  * `pin` is stored in plaintext by design (see schema.prisma) so a school office can
  * re-print a credential. That is contained by role: `canReadStudentPins` admits
- * SCHOOL_ADMIN and SUPER_ADMIN only. A teacher has no reason to read a student's
+ * SCHOOL_ADMIN only. A teacher has no reason to read a student's
  * login credential, and the select below is built accordingly rather than filtered
  * after the fact.
  */

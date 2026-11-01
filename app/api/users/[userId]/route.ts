@@ -45,14 +45,14 @@ export const GET = route<Params>(async (req, ctx) => {
  * rather than at token expiry.
  */
 export const PATCH = route<Params>(async (req, ctx) => {
-  const { db, session } = await requireSchoolScope(req, ['SUPER_ADMIN', 'SCHOOL_ADMIN'])
+  const { db, session } = await requireSchoolScope(req, ['SCHOOL_ADMIN'])
   const userId = parseParam((await ctx.params).userId, 'userId')
   const input = await readJson(req, updateUserSchema)
 
   const target = await resolveUser(db, userId)
 
   // A school admin cannot modify a SUPER_ADMIN who happens to share their school.
-  if (target.role === 'SUPER_ADMIN' && session.role !== 'SUPER_ADMIN') {
+  if (target.role === 'SUPER_ADMIN') {
     throw forbidden('You cannot modify a platform administrator account.', 'ROLE_ESCALATION_BLOCKED')
   }
 

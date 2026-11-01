@@ -9,11 +9,10 @@ import { api, ApiClientError, errorMessage } from '@/lib/client/api'
 import { SMS_CONTEXT_HEADER, smsContextKey } from '@/src/modules/shared/context-key'
 import { calendarKey, isContextError, useSmsWorkspace, type SmsSchool } from '@/src/modules/shared/ui/SmsWorkspace'
 import { CalendarForm } from './CalendarForm'
-import { SchoolSelector } from './SchoolSelector'
 import { calendarDateLabel, type CalendarResponse } from './types'
 
 export function CalendarScreen() {
-  const { user, school, switching, scopeProblem } = useSmsWorkspace()
+  const { user, school, scopeProblem } = useSmsWorkspace()
   return (
     <div className="space-y-6">
       <header>
@@ -21,11 +20,10 @@ export function CalendarScreen() {
         <h1 className="mt-1 font-headline-lg text-headline-lg-mobile text-on-surface md:text-headline-lg">Academic calendar</h1>
         <p className="mt-2 max-w-2xl text-on-surface-variant">Set up academic sessions and the terms within them.</p>
       </header>
-      {user.role === 'SUPER_ADMIN' ? <SchoolSelector /> : <p className="text-sm text-on-surface-variant">Managing <strong className="text-on-surface">{school?.name}</strong></p>}
-      {switching ? <div role="status" className="flex items-center gap-3 py-8"><Spinner size={20} decorative />Switching school…</div>
-        : scopeProblem ? <CalendarProblem message={scopeProblem} reload />
+      <p className="text-sm text-on-surface-variant">Managing <strong className="text-on-surface">{school?.name}</strong></p>
+      {scopeProblem ? <CalendarProblem message={scopeProblem} reload />
           : school ? <CalendarPanel key={`${user.id}:${school.id}`} school={school} />
-            : <div className="card p-6 text-on-surface-variant">Choose a school above to view and set up its academic calendar.</div>}
+            : <div className="card p-6 text-on-surface-variant">Your account needs an active school.</div>}
     </div>
   )
 }

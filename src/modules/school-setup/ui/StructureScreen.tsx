@@ -9,23 +9,21 @@ import { api, ApiClientError, errorMessage } from '@/lib/client/api'
 import { CLASS_LEVELS } from '@/lib/core/domain'
 import { SMS_CONTEXT_HEADER, smsContextKey } from '@/src/modules/shared/context-key'
 import { isContextError, structureKey, useSmsWorkspace, type SmsSchool } from '@/src/modules/shared/ui/SmsWorkspace'
-import { SchoolSelector } from './SchoolSelector'
 import { StructureForm } from './StructureForm'
 import type { ClassArmsResponse, ClassArmSummary, SubjectsResponse } from './types'
 
 export function StructureScreen() {
-  const { user, school, switching, scopeProblem } = useSmsWorkspace()
+  const { user, school, scopeProblem } = useSmsWorkspace()
   return <div className="space-y-6">
     <header>
       <p className="text-sm font-semibold text-primary">School setup</p>
       <h1 className="mt-1 font-headline-lg text-headline-lg-mobile text-on-surface md:text-headline-lg">Classes &amp; subjects</h1>
       <p className="mt-2 max-w-2xl text-on-surface-variant">Set up class arms and your school’s subject list.</p>
     </header>
-    {user.role === 'SUPER_ADMIN' ? <SchoolSelector /> : <p className="text-sm text-on-surface-variant">Managing <strong className="text-on-surface">{school?.name}</strong></p>}
-    {switching ? <div role="status" className="flex items-center gap-3 py-8"><Spinner size={20} decorative />Switching school…</div>
-      : scopeProblem ? <StructureProblem message={scopeProblem} reload />
+    <p className="text-sm text-on-surface-variant">Managing <strong className="text-on-surface">{school?.name}</strong></p>
+    {scopeProblem ? <StructureProblem message={scopeProblem} reload />
         : school ? <StructurePanel key={`${user.id}:${school.id}`} school={school} />
-          : <div className="card p-6 text-on-surface-variant">Choose a school above to manage its class arms and subjects.</div>}
+          : <div className="card p-6 text-on-surface-variant">Your account needs an active school.</div>}
   </div>
 }
 

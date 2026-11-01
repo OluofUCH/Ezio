@@ -19,7 +19,7 @@ const pdf = await PDFDocument.create()
 pdf.registerFontkit(fontkit)
 pdf.setTitle('Ezio Nigeria — Site navigation & workflow guide')
 pdf.setAuthor('Ezio Nigeria')
-pdf.setSubject('School setup, automatic guardian onboarding, parent results and notices, fee records, CBT exams and offline hall operation')
+pdf.setSubject('Platform administration, form-teacher admissions, complete roster imports, guardian onboarding, school records and CBT exams')
 pdf.setCreator('Ezio standalone guide generator')
 pdf.catalog.set(PDFName.of('Lang'), PDFString.of('en-GB'))
 const fonts = {}
@@ -133,7 +133,7 @@ page.drawRectangle({ x: M, y: H - 75, width: 44, height: 6, color: palette.lime 
 text('EZIO NIGERIA', M, H - 111, 16, fonts.bold, palette.green)
 text('Site navigation', M, 639, 34, fonts.bold)
 text('& workflow guide', M, 592, 34, fonts.bold)
-text('School management first. CBT inside SMS.', M, 547, 14, fonts.body, palette.green)
+text('School operations and platform administration.', M, 547, 14, fonts.body, palette.green)
 y = 500
 paragraph('A practical reference for Super Admin, School Admin, teachers, parents, students and exam-hall invigilators.', { size: 12 })
 
@@ -146,7 +146,7 @@ flow.forEach((label, index) => {
   text(label, x + 12, 389, 10.2, fonts.bold)
 })
 y = 315
-paragraph('Manage school records, track fees and publish term results. Guardian profiles create parent access automatically. Parents can read reports and school notices, or exchange comments with the form teacher. Open CBT for online exams and offline hall work.', { size: 11.5 })
+paragraph('Onboard schools and manage platform access. School administrators and form teachers admit students with complete profiles and guardian details. Manage fees, publish results and exchange parent comments. Open CBT for online exams and offline hall work.', { size: 11.5 })
 text('Standalone PDF · Searchable text · Clickable contents', M, 134, 10, fonts.body, palette.muted)
 text(`Updated ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`, M, 110, 10, fonts.body, palette.muted)
 

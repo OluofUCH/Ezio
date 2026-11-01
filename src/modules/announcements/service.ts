@@ -9,7 +9,7 @@ import { ANNOUNCEMENT_AUDIENCES, needsClassArm } from './audiences'
 
 export const announcementSchema = z.object({
   title: z.string().trim().min(1).max(160), body: z.string().trim().min(1).max(10000),
-  audience: z.enum(ANNOUNCEMENT_AUDIENCES), targetRole: z.enum(['SUPER_ADMIN', 'SCHOOL_ADMIN', 'TEACHER']).nullable().optional(), classArmId: idSchema.nullable().optional(),
+  audience: z.enum(ANNOUNCEMENT_AUDIENCES), targetRole: z.enum(['SCHOOL_ADMIN', 'TEACHER']).nullable().optional(), classArmId: idSchema.nullable().optional(),
 }).strict().superRefine((value, ctx) => {
   if ((value.audience === 'ROLE') !== Boolean(value.targetRole) || needsClassArm(value.audience) !== Boolean(value.classArmId)) ctx.addIssue({ code: 'custom', message: 'Choose exactly the target required by the audience.' })
 })

@@ -47,8 +47,8 @@ export type RscStaffContext = {
  * `isActive` is re-checked here as it is in `requireStaff`: a teacher deactivated
  * mid-shift should stop seeing the portal on their next navigation, not at token expiry.
  *
- * `db` is null for SUPER_ADMIN, who has no school of their own — school-scoped reads
- * require them to name one, exactly as `requireSchoolScope` demands `?schoolId=`.
+ * Platform administrators receive no school client, even if an old account still
+ * has a schoolId. Their access is limited to platform reporting and onboarding.
  */
 export async function getStaffContext(): Promise<RscStaffContext | null> {
   const token = await readSessionCookie(STAFF_COOKIE)
@@ -90,9 +90,9 @@ export async function getStaffContext(): Promise<RscStaffContext | null> {
 
   return {
     session,
-    db: user.schoolId ? tenantClient(user.schoolId) : null,
+    db: user.role !== 'SUPER_ADMIN' && user.schoolId ? tenantClient(user.schoolId) : null,
     user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
-    school: user.school ? { id: user.school.id, name: user.school.name, slug: user.school.slug } : null,
+    school: user.role !== 'SUPER_ADMIN' && user.school ? { id: user.school.id, name: user.school.name, slug: user.school.slug } : null,
   }
 }
 

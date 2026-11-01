@@ -102,14 +102,17 @@ export function buildQuestionTemplate(): Buffer {
 
 export function buildRosterTemplate(): string {
   const examples: Record<typeof ROSTER_HEADERS[number], string>[] = [
-    { regNumber: 'NUR001', fullName: 'Example Nursery Student', classLevel: 'NURSERY1', pin: '', arm: 'A' },
-    { regNumber: 'PRI001', fullName: 'Example Primary Student', classLevel: 'PRIMARY3', pin: '001234', arm: 'A' },
-    { regNumber: 'JSS001', fullName: 'Example Junior Student', classLevel: 'JSS1', pin: '', arm: '' },
-    { regNumber: 'SS001', fullName: 'Example Senior Student', classLevel: 'SS1', pin: '481920', arm: 'B' },
+    { regNumber: 'NUR001', fullName: 'Example Nursery Student', classLevel: 'NURSERY1', pin: '', arm: 'A', dateOfBirth: '2022-04-03', gender: 'Female', address: '12 Example Street, Lagos', guardianName: 'Example Guardian One', guardianRelationship: 'Mother', guardianPhone: '08012345678', guardianEmail: 'guardian.one@example.com' },
+    { regNumber: 'PRI001', fullName: 'Example Primary Student', classLevel: 'PRIMARY3', pin: '001234', arm: 'A', dateOfBirth: '2018-09-15', gender: 'Male', address: '12 Example Street, Lagos', guardianName: 'Example Guardian One', guardianRelationship: 'Mother', guardianPhone: '08012345678', guardianEmail: 'guardian.one@example.com' },
+    { regNumber: 'JSS001', fullName: 'Example Junior Student', classLevel: 'JSS1', pin: '', arm: '', dateOfBirth: '2014-02-20', gender: 'Female', address: '8 Sample Road, Abuja', guardianName: 'Example Guardian Two', guardianRelationship: 'Father', guardianPhone: '+2348012345679', guardianEmail: 'guardian.two@example.com' },
+    { regNumber: 'SS001', fullName: 'Example Senior Student', classLevel: 'SS1', pin: '481920', arm: 'B', dateOfBirth: '2011-11-06', gender: 'Male', address: '5 Demo Close, Enugu', guardianName: 'Example Guardian Three', guardianRelationship: 'Aunt', guardianPhone: '08012345670', guardianEmail: 'guardian.three@example.com' },
   ]
   const rows = [
     [...ROSTER_HEADERS].join(','),
-    ...examples.map(example => ROSTER_HEADERS.map(header => example[header]).join(',')),
+    ...examples.map(example => ROSTER_HEADERS.map(header => {
+      const value = example[header]
+      return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+    }).join(',')),
   ]
 
   // Leading BOM so Excel on Windows opens this as UTF-8 rather than mangling

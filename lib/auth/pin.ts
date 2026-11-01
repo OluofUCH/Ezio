@@ -6,7 +6,7 @@ import { createHash, randomInt, timingSafeEqual } from 'node:crypto'
  * PINs are stored in plaintext by design (see `Student.pin` in schema.prisma) so a
  * school office can re-print a student's credential without a reset-and-redistribute
  * cycle. That decision is contained by two things: PINs are only ever readable by
- * SCHOOL_ADMIN/SUPER_ADMIN, and the comparison below is constant-time.
+ * SCHOOL_ADMIN, and the comparison below is constant-time.
  */
 
 const PIN_LENGTH = 6

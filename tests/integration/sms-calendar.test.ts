@@ -17,7 +17,7 @@ test('SMS calendar routes enforce tenant, role and calendar boundaries', async (
   const calendar = await import('../../app/(sms)/api/sms/staff/academic-sessions/route')
   const terms = await import('../../app/(sms)/api/sms/staff/academic-sessions/[sessionId]/terms/route')
   const selector = await import('../../app/(sms)/api/sms/staff/school-context/route')
-  const { SMS_SCHOOL_COOKIE } = await import('../../src/modules/shared/school-scope-token')
+  const { SMS_SCHOOL_COOKIE, signSchoolScope } = await import('../../src/modules/shared/school-scope-token')
   const empty = { params: Promise.resolve({}) }
   const path = '/api/sms/staff/academic-sessions'
   const period = { name: '2026/2027', startDate: '2026-09-01', endDate: '2027-07-31' }
@@ -100,44 +100,40 @@ test('SMS calendar routes enforce tenant, role and calendar boundaries', async (
     })
 
     await t.test('stale browser school/account context cannot redirect a form to another tenant', async () => {
-      const selected = await select(superA.token, b.id)
-      const cookie = selected.cookie!.split(';')[0]!
-      const stale = await create(superA.token, { ...period, name: 'Stale form' }, cookie, smsContextKey(superA.user.id, a.id))
+      const stale = await create(admin.token, { ...period, name: 'Stale form' }, undefined, smsContextKey(admin.user.id, b.id))
       assert.equal(stale.status, 409)
       assert.equal(stale.body.error.details.reason, 'SCHOOL_SCOPE_CHANGED')
       assert.equal(await db.academicSession.count({ where: { name: 'Stale form', schoolId: { in: schools } } }), 0)
-      assert.equal((await get(superA.token, cookie, '', smsContextKey(superB.user.id, b.id))).status, 409)
-      assert.equal((await get(superA.token, cookie, '', smsContextKey(superA.user.id, b.id))).status, 200)
+      assert.equal((await get(admin.token, undefined, '', smsContextKey(superB.user.id, a.id))).status, 409)
+      assert.equal((await get(admin.token, undefined, '', smsContextKey(admin.user.id, a.id))).status, 200)
       assert.equal((await get(admin.token, undefined, '', smsContextKey(admin.user.id, b.id))).status, 409)
     })
 
-    await t.test('Super Admin selection is signed, owner-bound, and cannot retarget a school account', async () => {
-      assert.equal((await get(superA.token, undefined, `?schoolId=${b.id}`)).status, 409)
+    await t.test('retired Super Admin selection cannot grant SMS access or retarget a school account', async () => {
+      assert.equal((await get(superA.token, undefined, `?schoolId=${b.id}`)).status, 403)
       const chosen = await select(superA.token, b.id)
-      assert.equal(chosen.status, 200)
-      assert.match(chosen.cookie!, /HttpOnly/i)
-      assert.match(chosen.cookie!, /Secure/i)
-      assert.equal(chosen.body.data.token, undefined)
-      const cookie = chosen.cookie!.split(';')[0]!
-      assert.equal((await get(superA.token, cookie)).body.data.schoolId, b.id)
+      assert.equal(chosen.status, 403)
+      assert.equal(chosen.cookie, null)
+      const scopeToken = await signSchoolScope(superA.user.id, b.id)
+      const cookie = `${SMS_SCHOOL_COOKIE}=${scopeToken}`
+      assert.equal((await get(superA.token, cookie)).status, 403)
       assert.equal((await get(superB.token, cookie)).status, 403)
       assert.equal((await get(superA.token, `${SMS_SCHOOL_COOKIE}=tampered`)).status, 403)
       assert.equal((await get(admin.token, cookie)).body.data.schoolId, a.id)
-      const scopeToken = cookie.slice(cookie.indexOf('=') + 1)
       assert.equal((await get(scopeToken)).status, 401)
       await db.user.update({ where: { id: superA.user.id }, data: { role: 'SCHOOL_ADMIN', schoolId: a.id } })
       assert.equal((await get(superA.token, cookie)).body.data.schoolId, a.id)
     })
 
-    await t.test('account and school deactivation are checked server-side; global management remains available', async () => {
+    await t.test('account and school deactivation are checked server-side; platform accounts cannot bypass them', async () => {
       await db.user.update({ where: { id: admin.user.id }, data: { isActive: false } })
       assert.equal((await get(admin.token)).status, 403)
       await db.user.update({ where: { id: admin.user.id }, data: { isActive: true } })
       await db.school.update({ where: { id: a.id }, data: { isActive: false } })
       assert.equal((await get(admin.token)).status, 403)
       const selected = await select(superB.token, a.id)
-      assert.equal(selected.status, 200)
-      assert.equal((await get(superB.token, selected.cookie!.split(';')[0])).status, 200)
+      assert.equal(selected.status, 403)
+      assert.equal((await get(superB.token)).status, 403)
     })
   } finally {
     try {

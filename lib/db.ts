@@ -7,15 +7,16 @@ import { PrismaClient } from '@prisma/client'
  * tenant isolation is bypassed is findable with a single grep. Application code
  * must use `tenantClient(schoolId)` from `lib/tenant.ts` instead.
  *
- * Legitimate call sites — there should only ever be these three:
+ * Legitimate call sites include:
  *
- *   1. `app/api/schools/**`          Super Admin manages every tenant by definition.
+ *   1. `app/api/schools/**` and the platform dashboard: Super Admin onboarding,
+ *      school status and aggregate platform reporting.
  *   2. `lib/auth/*` login lookups    A user must be found by email, and a student by
  *                                    (schoolSlug, regNumber), *before* their school is
  *                                    known — the scope doesn't exist yet at that point.
  *   3. `prisma/seed.ts`              Bootstrapping, runs outside any request.
  *
- * Adding a fourth is a design smell: it means a route is reading across tenants.
+ * School operations must always use the authenticated tenant client.
  */
 
 const globalForPrisma = globalThis as unknown as { unscopedDb?: PrismaClient }

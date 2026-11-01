@@ -18,7 +18,7 @@ const SCHOOL_SELECT = {
   isActive: true,
   createdAt: true,
   updatedAt: true,
-  _count: { select: { users: true, students: true, exams: true, localServers: true } },
+  _count: { select: { users: { where: { role: 'TEACHER' } }, students: true } },
 } as const
 
 /** GET /api/schools/[schoolId] */

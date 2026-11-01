@@ -12,6 +12,8 @@
     "lint": "eslint .",
     "test": "tsx --test tests/*.test.ts",
     "test:sms-db": "tsx --test tests/integration/sms-foundations.test.ts",
+    "test:platform-access": "tsx --test tests/integration/platform-access.test.ts",
+    "test:sms-admissions": "tsx --test tests/integration/sms-admissions.test.ts",
     "test:sms-calendar": "tsx --test tests/integration/sms-calendar.test.ts",
     "test:sms-structure": "tsx --test tests/integration/sms-structure.test.ts",
     "test:sms-staff": "tsx --test tests/integration/sms-staff.test.ts",

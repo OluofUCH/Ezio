@@ -9,7 +9,6 @@ import { Spinner } from '@/components/ui/Spinner'
 import { api, ApiClientError, errorMessage, query } from '@/lib/client/api'
 import { SMS_CONTEXT_HEADER, smsContextKey } from '@/src/modules/shared/context-key'
 import { useSmsWorkspace, schoolDataPrefix, type SmsSchool } from '@/src/modules/shared/ui/SmsWorkspace'
-import { SchoolSelector } from '@/src/modules/school-setup/ui/SchoolSelector'
 import type { Prisma } from '@prisma/client'
 
 export type Json<T> = T extends Date ? string : T extends Prisma.Decimal ? string : T extends Uint8Array ? never : T extends Array<infer U> ? Json<U>[] : T extends object ? { [K in keyof T]: Json<T[K]> } : T
@@ -25,13 +24,13 @@ export function useSmsApi() {
 }
 export function useData<T>(path: string | null) {
   const api = useSmsApi()
-  return useQuery({ queryKey: [...api.key, path], queryFn: ({ signal }) => api.get<T>(path!, signal), enabled: Boolean(path && api.school && !api.switching) })
+  return useQuery({ queryKey: [...api.key, path], queryFn: ({ signal }) => api.get<T>(path!, signal), enabled: Boolean(path && api.school) })
 }
 export function PageFrame({ title, description, children }: { title: string; description?: string; children: (school: SmsSchool) => ReactNode }) {
-  const { user, school, switching, scopeProblem } = useSmsWorkspace()
+  const { user, school, scopeProblem } = useSmsWorkspace()
   return <div className="space-y-6"><header><p className="text-sm font-semibold text-primary">School management</p><h1 className="mt-1 text-headline-lg-mobile font-semibold md:text-headline-lg">{title}</h1>{description && <p className="mt-2 max-w-3xl text-on-surface-variant">{description}</p>}</header>
-    {user.role === 'SUPER_ADMIN' ? <SchoolSelector /> : <p className="text-sm">{school?.name}</p>}
-    {switching ? <Loading /> : scopeProblem ? <Problem message={scopeProblem} reload /> : school ? <div key={`${user.id}:${school.id}`}>{children(school)}</div> : <p className="card p-6">Choose a school to continue.</p>}
+    <p className="text-sm">{school?.name}</p>
+    {scopeProblem ? <Problem message={scopeProblem} reload /> : school ? <div key={`${user.id}:${school.id}`}>{children(school)}</div> : <p className="card p-6">Your account needs an active school.</p>}
   </div>
 }
 export function Loading() { return <p role="status" className="flex items-center gap-3 p-6"><Spinner decorative />Loading…</p> }
