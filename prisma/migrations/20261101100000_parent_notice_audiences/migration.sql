@@ -1,0 +1,2 @@
+ALTER TYPE "AnnouncementAudience" ADD VALUE 'ALL_PARENTS';
+ALTER TYPE "AnnouncementAudience" ADD VALUE 'PARENT_CLASS_ARM';

@@ -26,14 +26,18 @@ async function renderReportPdf(db: TenantDb, report: ReportCard) {
   // to bundle the TTF as JavaScript. next.config.ts traces this runtime asset.
   const fontPath = NodeModule.createRequire(__filename).resolve('dejavu-fonts-ttf/ttf/DejaVuSans.ttf')
   const font = await document.embedFont(await readFile(fontPath), { subset: true })
+  const enrollment = await db.enrollment.findFirst({ where: { id: report.enrollmentId }, select: { studentId: true, student: { select: { fullName: true } } } })
+  const studentName = enrollment?.student?.fullName || snapshot.student
+  const photo = enrollment ? await db.studentPhoto.findFirst({ where: { studentId: enrollment.studentId }, select: { data: true } }) : null
+  document.setTitle(`${studentName} — ${snapshot.session} — ${snapshot.term}`)
   let page = document.addPage([595, 842])
   let y = 796
-  function line(text: string, size = 11) {
+  function line(text: string, size = 11, width = 505) {
     const words = text.split(/\s+/)
     let current = ''
     for (const word of words) {
       const next = current ? `${current} ${word}` : word
-      if (font.widthOfTextAtSize(next, size) > 505 && current) { draw(current, size); current = word } else current = next
+      if (font.widthOfTextAtSize(next, size) > width && current) { draw(current, size); current = word } else current = next
     }
     draw(current, size)
   }
@@ -42,13 +46,13 @@ async function renderReportPdf(db: TenantDb, report: ReportCard) {
     page.drawText(text, { x: 45, y, size, font, color: rgb(0.1, 0.12, 0.1) })
     y -= size + 8
   }
-  line(snapshot.school, 19)
-  line('REPORT CARD', 14)
-  line(`${snapshot.session} · ${snapshot.term}`)
-  line(`${snapshot.student} · ${snapshot.admissionNumber}`)
-  line(`Class: ${snapshot.className}`)
-  const enrollment = await db.enrollment.findFirst({ where: { id: report.enrollmentId }, select: { studentId: true } })
-  const photo = enrollment ? await db.studentPhoto.findFirst({ where: { studentId: enrollment.studentId }, select: { data: true } }) : null
+  const headerWidth = photo ? 400 : 505
+  line(snapshot.school, 19, headerWidth)
+  line('REPORT CARD', 14, headerWidth)
+  line(`${snapshot.session} · ${snapshot.term}`, 11, headerWidth)
+  line(`Student: ${studentName}`, 11, headerWidth)
+  line(`Admission no.: ${snapshot.admissionNumber}`, 11, headerWidth)
+  line(`Class: ${snapshot.className}`, 11, headerWidth)
   if (photo) {
     // pdf-lib reads the backing ArrayBuffer without respecting byteOffset. Copy
     // database Buffer/Uint8Array views so valid JPEGs always start at offset zero.

@@ -200,10 +200,12 @@ export async function publishReports(ctx: ScopedStaffContext, raw: z.infer<typeo
 export async function listReports(ctx: ScopedStaffContext, classArmId: string, termId: string) {
   const term = await ownTerm(ctx.db, termId)
   await assertArmAccess(ctx, classArmId, term.academicSessionId)
-  return ctx.db.reportCard.findMany({ where: { classArmId, termId }, orderBy: [{ position: 'asc' }, { id: 'asc' }] })
+  const reports = await ctx.db.reportCard.findMany({ where: { classArmId, termId }, include: { enrollment: { select: { student: { select: { fullName: true } } } } }, orderBy: [{ position: 'asc' }, { id: 'asc' }] })
+  return reports.map(({ enrollment, ...report }) => ({ ...report, snapshot: { ...report.snapshot as unknown as ReportSnapshot, student: enrollment.student.fullName } }))
 }
 export async function ownReports(db: TenantDb, studentId: string) {
-  return db.reportCard.findMany({ where: { status: 'PUBLISHED', enrollment: { studentId } }, orderBy: { approvedAt: 'desc' } })
+  const reports = await db.reportCard.findMany({ where: { status: 'PUBLISHED', enrollment: { studentId } }, include: { enrollment: { select: { student: { select: { fullName: true } } } } }, orderBy: { approvedAt: 'desc' } })
+  return reports.map(({ enrollment, ...report }) => ({ ...report, snapshot: { ...report.snapshot as unknown as ReportSnapshot, student: enrollment.student.fullName } }))
 }
 export async function saveRemarks(ctx: ScopedStaffContext, raw: z.infer<typeof remarkSchema>) {
   const input = remarkSchema.parse(raw)

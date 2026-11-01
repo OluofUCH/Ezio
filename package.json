@@ -17,6 +17,8 @@
     "test:sms-staff": "tsx --test tests/integration/sms-staff.test.ts",
     "test:sms-complete": "tsx --test tests/integration/sms-complete.test.ts",
     "test:sms-parents": "tsx --test tests/integration/sms-parents.test.ts",
+    "test:sms-onboarding": "tsx --test tests/integration/sms-onboarding.test.ts",
+    "test:sms-notices": "tsx --test tests/integration/sms-notices.test.ts",
     "test:sms-fees": "tsx --test tests/integration/sms-fees.test.ts",
     "check:lan-boundary": "node scripts/check-lan-boundary.mjs",
     "check:report-pdf": "node scripts/check-report-pdf-bundle.mjs",

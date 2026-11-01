@@ -53,7 +53,7 @@ test('remaining SMS modules work together with strict role and tenant boundaries
     await db.enrollment.updateMany({ where: { id: { in: [e1.id, e2.id, e3.id] } }, data: { effectiveFrom: session.startDate } })
 
     await t.test('student profiles and resized database photos preserve CBT identity', async () => {
-      await updateManagedStudent(adminCtx, s1.id, { guardianName: 'Guardian One', guardianPhone: '0801', address: 'Lagos' })
+      await updateManagedStudent(adminCtx, s1.id, { guardianName: 'Guardian One', guardianPhone: '08012345678', address: 'Lagos' })
       const before = await db.student.findFirstOrThrow({ where: { id: s1.id } })
       const png = await sharp({ create: { width: 900, height: 700, channels: 3, background: '#4a6700' } }).png().toBuffer()
       await saveStudentPhoto(adminCtx, s1.id, png)
@@ -164,6 +164,7 @@ test('remaining SMS modules work together with strict role and tenant boundaries
     try {
       for(const schoolId of schoolIds){
         const where={schoolId}
+        await root.parentComment.deleteMany({ where }); await root.parentStudent.deleteMany({ where }); await root.parent.deleteMany({ where })
         await root.scoreAuditLog.deleteMany({where});await root.score.deleteMany({where});await root.reportCard.deleteMany({where});await root.resultSubmission.deleteMany({where});await root.termResultPolicy.deleteMany({where});await root.attendance.deleteMany({where});await root.announcement.deleteMany({where});await root.offlineRosterGrant.deleteMany({where});await root.examSession.deleteMany({where:{exam:{schoolId}}});await root.exam.deleteMany({where});await root.teachingAssignment.deleteMany({where});await root.studentPhoto.deleteMany({where});await root.studentProfile.deleteMany({where});await root.enrollment.deleteMany({where});await root.assessmentComponent.deleteMany({where});await root.gradeBand.deleteMany({where});await root.term.deleteMany({where});await root.classArm.deleteMany({where});await root.subject.deleteMany({where});await root.academicSession.deleteMany({where});await root.localServer.deleteMany({where});await root.student.deleteMany({where});await root.user.deleteMany({where});await root.school.deleteMany({where:{id:schoolId}})
       }
     } finally {await root.$disconnect()}

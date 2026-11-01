@@ -19,7 +19,7 @@ const pdf = await PDFDocument.create()
 pdf.registerFontkit(fontkit)
 pdf.setTitle('Ezio Nigeria — Site navigation & workflow guide')
 pdf.setAuthor('Ezio Nigeria')
-pdf.setSubject('SMS navigation, role-based workflows, CBT exams and offline hall operation')
+pdf.setSubject('School setup, automatic guardian onboarding, parent results and notices, fee records, CBT exams and offline hall operation')
 pdf.setCreator('Ezio standalone guide generator')
 pdf.catalog.set(PDFName.of('Lang'), PDFString.of('en-GB'))
 const fonts = {}
@@ -135,9 +135,9 @@ text('Site navigation', M, 639, 34, fonts.bold)
 text('& workflow guide', M, 592, 34, fonts.bold)
 text('School management first. CBT inside SMS.', M, 547, 14, fonts.body, palette.green)
 y = 500
-paragraph('A practical reference for Super Admin, School Admin, teachers, students and exam-hall invigilators.', { size: 12 })
+paragraph('A practical reference for Super Admin, School Admin, teachers, parents, students and exam-hall invigilators.', { size: 12 })
 
-const flow = ['Sign in', 'School dashboard', 'Choose a module']
+const flow = ['Sign in', 'Open workspace', 'Choose a page']
 const cardWidth = (WIDTH - 30) / 3
 flow.forEach((label, index) => {
   const x = M + index * (cardWidth + 15)
@@ -146,7 +146,7 @@ flow.forEach((label, index) => {
   text(label, x + 12, 389, 10.2, fonts.bold)
 })
 y = 315
-paragraph('Open CBT in the sidebar for exam preparation, online attempts, hall servers and result imports. Return to School dashboard for school records and term reports.', { size: 11.5 })
+paragraph('Manage school records, track fees and publish term results. Guardian profiles create parent access automatically. Parents can read reports and school notices, or exchange comments with the form teacher. Open CBT for online exams and offline hall work.', { size: 11.5 })
 text('Standalone PDF · Searchable text · Clickable contents', M, 134, 10, fonts.body, palette.muted)
 text(`Updated ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`, M, 110, 10, fonts.body, palette.muted)
 
@@ -162,12 +162,24 @@ for (const section of sections) {
   paragraph(section.title, { size: 22, font: fonts.bold, gap: 18, color: palette.green })
   let pending = []
   const flush = () => { if (pending.length) { paragraph(pending.join(' ')); pending = [] } }
-  for (const raw of section.lines) {
+  for (const [index, raw] of section.lines.entries()) {
     const line = raw.trim()
     if (!line) { flush(); continue }
     if (line.startsWith('### ')) {
       flush()
-      ensure(70)
+      // Keep a heading with its opening paragraph or first two short list items.
+      // Measure the content rather than reserving a fixed block on every page.
+      const following = section.lines.slice(index + 1).map(value => value.trim()).filter(Boolean)
+      const listOpening = /^(?:\d+\. |- )/.test(following[0] ?? '')
+      let openingHeight = 0
+      for (const next of following.slice(0, listOpening ? 2 : 1)) {
+        if (next.startsWith('### ')) break
+        const indent = /^\d+\. /.test(next) ? 23 : next.startsWith('- ') ? 15 : 0
+        const content = next.replace(/^(?:\d+\. |- )/, '')
+        openingHeight += Math.min(wrap(content, WIDTH - indent).length, 2) * lineHeight + (indent ? 6 : 0)
+      }
+      const headingHeight = 7 + wrap(line.slice(4), WIDTH, 13, fonts.bold).length * Math.max(lineHeight, 13 * 1.4) + 8
+      ensure(Math.max(70, headingHeight + openingHeight))
       y -= 7
       paragraph(line.slice(4), { size: 13, font: fonts.bold, gap: 8, color: palette.green })
     } else if (line.startsWith('- ')) {

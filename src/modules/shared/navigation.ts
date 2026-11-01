@@ -18,6 +18,7 @@ export function portalNavigation(role: PortalRole): NavItem[] {
   if (role === 'PARENT') return [
     { href: '/sms/parent', label: 'Child results', icon: 'description', exact: true },
     { href: '/sms/parent/comments', label: 'Teacher comments', icon: 'forum' },
+    { href: '/sms/parent/notices', label: 'School notices', icon: 'campaign' },
   ]
   const home: NavLink = { href: portalHome(role), label: 'School dashboard', icon: 'dashboard', exact: true }
   if (role === 'STUDENT') {
@@ -57,7 +58,7 @@ export function portalNavigation(role: PortalRole): NavItem[] {
     ...(role === 'TEACHER' ? [{ href: '/sms/staff/parent-comments', label: 'Parent comments', icon: 'forum' }] : []),
     { href: '/sms/staff/scores', label: 'Score entry', icon: 'edit_note' },
     { href: '/sms/staff/reports', label: 'Report cards', icon: 'description' },
-    { href: '/sms/staff/announcements', label: 'Staff notices', icon: 'campaign' },
+    { href: '/sms/staff/announcements', label: admin ? 'School notices' : 'Staff notices', icon: 'campaign' },
     { href: '/staff/account', label: 'My account', icon: 'manage_accounts' },
   ]
 }

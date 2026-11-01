@@ -101,11 +101,15 @@ export function buildQuestionTemplate(): Buffer {
 }
 
 export function buildRosterTemplate(): string {
+  const examples: Record<typeof ROSTER_HEADERS[number], string>[] = [
+    { regNumber: 'NUR001', fullName: 'Example Nursery Student', classLevel: 'NURSERY1', pin: '', arm: 'A' },
+    { regNumber: 'PRI001', fullName: 'Example Primary Student', classLevel: 'PRIMARY3', pin: '001234', arm: 'A' },
+    { regNumber: 'JSS001', fullName: 'Example Junior Student', classLevel: 'JSS1', pin: '', arm: '' },
+    { regNumber: 'SS001', fullName: 'Example Senior Student', classLevel: 'SS1', pin: '481920', arm: 'B' },
+  ]
   const rows = [
     [...ROSTER_HEADERS].join(','),
-    'STU001,Adebayo Chinedu Okonkwo,JSS2,',
-    'STU002,Fatima Aisha Bello,JSS2,481920',
-    'STU003,Emeka Daniel Nwosu,SS1,',
+    ...examples.map(example => ROSTER_HEADERS.map(header => example[header]).join(',')),
   ]
 
   // Leading BOM so Excel on Windows opens this as UTF-8 rather than mangling

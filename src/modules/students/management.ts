@@ -9,14 +9,22 @@ import { assertSchoolAdministrator } from '@/src/modules/shared/authorization'
 import { asDatabaseDate, calendarDateSchema } from '@/src/modules/shared/calendar-date'
 import { schoolTransaction } from '@/src/modules/shared/transaction'
 import { defaultArmFor } from '@/src/modules/school-setup/rules'
+import { parentPhoneSchema } from '@/src/modules/parents/validation'
+import { hashPassword } from '@/lib/auth/password'
+import { onboardGuardian } from '@/src/modules/parents/onboarding'
+import { DEFAULT_PARENT_PIN, type GuardianAccountResult } from '@/src/modules/parents/rules'
 
 const text = (max: number) => z.string().trim().max(max).transform((v) => v || null).nullable().optional()
-export const studentProfileSchema = z.object({
-  fullName: fullNameSchema.optional(), pin: pinSchema.optional(), dateOfBirth: calendarDateSchema.nullable().optional(),
-  gender: text(40), address: text(500), guardianName: text(120), guardianRelationship: text(80),
-  guardianPhone: text(40), guardianEmail: z.union([z.literal(''), z.string().email().max(254)]).transform((v) => v || null).nullable().optional(),
+export const studentProfileDetailsSchema = z.object({
+  dateOfBirth: calendarDateSchema.or(z.literal('')).transform(value => value || null).nullable().optional(),
+  gender: text(40), address: text(500),
+  guardianName: z.string().trim().max(120).refine(value => !value || value.length >= 2, 'Enter the guardian’s full name.').transform(value => value ? value.replace(/\s+/g, ' ') : null).nullable().optional(),
+  guardianRelationship: text(80),
+  guardianPhone: parentPhoneSchema.or(z.literal('')).transform(value => value || null).nullable().optional(),
+  guardianEmail: z.union([z.literal(''), z.string().trim().email().max(254)]).transform((v) => v || null).nullable().optional(),
 }).strict()
-export const managedStudentSchema = z.object({ regNumber: regNumberSchema, fullName: fullNameSchema, classArmId: idSchema, pin: pinSchema.optional() }).strict()
+export const studentProfileSchema = studentProfileDetailsSchema.extend({ fullName: fullNameSchema.optional(), pin: pinSchema.optional() }).strict()
+export const managedStudentSchema = studentProfileDetailsSchema.extend({ regNumber: regNumberSchema, fullName: fullNameSchema, classArmId: idSchema, pin: pinSchema.optional() }).strict()
 export const studentListSchema = paginationSchema.extend({ search: z.string().trim().max(100).optional(), classArmId: idSchema.optional() }).strict()
 export const transitionSchema = z.object({
   studentId: idSchema, academicSessionId: idSchema, classArmId: idSchema.optional(),
@@ -44,14 +52,22 @@ export async function listManagedStudents(ctx: ScopedStaffContext, raw: z.infer<
 export async function createManagedStudent(ctx: ScopedStaffContext, raw: z.infer<typeof managedStudentSchema>) {
   assertSchoolAdministrator(ctx)
   const input = managedStudentSchema.parse(raw)
+  const { regNumber, fullName, classArmId, pin, dateOfBirth, ...profile } = input
+  if (dateOfBirth && asDatabaseDate(dateOfBirth) > new Date()) throw conflict('Date of birth cannot be in the future.')
+  const parentPinHash = profile.guardianName && profile.guardianPhone ? await hashPassword(DEFAULT_PARENT_PIN) : ''
   return schoolTransaction(ctx.db, async (tx) => {
-    const arm = await tx.classArm.findFirst({ where: { id: input.classArmId } })
+    const arm = await tx.classArm.findFirst({ where: { id: classArmId } })
     const session = await tx.academicSession.findFirst({ where: { isCurrent: true } })
     if (!arm) throw notFound('Class arm not found.')
     if (!session) throw conflict('Activate an academic session before admitting students into arms.')
-    const student = await tx.student.create({ data: { schoolId: ctx.schoolId, regNumber: input.regNumber, fullName: input.fullName, classLevel: arm.level, pin: input.pin ?? generatePin() } })
+    const student = await tx.student.create({ data: { schoolId: ctx.schoolId, regNumber, fullName, classLevel: arm.level, pin: pin ?? generatePin() } })
     await tx.enrollment.create({ data: { schoolId: ctx.schoolId, studentId: student.id, academicSessionId: session.id, classArmId: arm.id, sequence: 1, isCurrent: true, reason: 'INITIAL' } })
-    return student
+    let parentAccount: GuardianAccountResult = { status: 'incomplete' }
+    if (dateOfBirth !== undefined || Object.values(profile).some(value => value !== undefined)) {
+      const savedProfile = await tx.studentProfile.create({ data: { schoolId: ctx.schoolId, studentId: student.id, ...profile, dateOfBirth: dateOfBirth ? asDatabaseDate(dateOfBirth) : null } })
+      parentAccount = await onboardGuardian(tx, ctx.schoolId, student.id, savedProfile, parentPinHash)
+    }
+    return { ...student, parentAccount }
   })
 }
 
@@ -59,12 +75,15 @@ export async function updateManagedStudent(ctx: ScopedStaffContext, id: string, 
   assertSchoolAdministrator(ctx)
   const { fullName, pin, dateOfBirth, ...profile } = studentProfileSchema.parse(raw)
   if (dateOfBirth && asDatabaseDate(dateOfBirth) > new Date()) throw conflict('Date of birth cannot be in the future.')
+  const parentPinHash = await hashPassword(DEFAULT_PARENT_PIN)
   return schoolTransaction(ctx.db, async (tx) => {
     if (!await tx.student.findFirst({ where: { id }, select: { id: true } })) throw notFound('Student not found.')
     if (pin && await tx.examSession.findFirst({ where: { studentId: id, status: 'IN_PROGRESS' }, select: { id: true } })) throw conflict('Wait for the open exam to finish before changing the PIN.')
     if (fullName || pin) await tx.student.update({ where: { id }, data: { fullName, pin } })
     const data = { ...profile, dateOfBirth: dateOfBirth === undefined ? undefined : dateOfBirth === null ? null : asDatabaseDate(dateOfBirth) }
-    return tx.studentProfile.upsert({ where: { schoolId_studentId: { schoolId: ctx.schoolId, studentId: id } }, create: { schoolId: ctx.schoolId, studentId: id, ...data }, update: data })
+    const savedProfile = await tx.studentProfile.upsert({ where: { schoolId_studentId: { schoolId: ctx.schoolId, studentId: id } }, create: { schoolId: ctx.schoolId, studentId: id, ...data }, update: data })
+    const parentAccount = await onboardGuardian(tx, ctx.schoolId, id, savedProfile, parentPinHash)
+    return { ...savedProfile, parentAccount }
   })
 }
 

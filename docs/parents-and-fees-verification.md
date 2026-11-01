@@ -1,5 +1,7 @@
 # Parent portal, fees and PDF verification
 
+The later automatic-onboarding and school-notice update is recorded in `docs/guardian-onboarding-verification.md`.
+
 Verified on 31 October 2026 using an isolated PostgreSQL 16 database and a local production build.
 
 ## Keyboard access

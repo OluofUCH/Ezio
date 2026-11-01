@@ -2,12 +2,13 @@ import type { Prisma } from '@prisma/client'
 import type { z } from 'zod'
 import type { ScopedStaffContext } from '@/lib/auth/session'
 import type { ScopedParentContext } from '@/lib/auth/parent'
+import type { ReportSnapshot } from '@/src/modules/results/service'
 import { hashPassword } from '@/lib/auth/password'
 import { conflict, forbidden, notFound } from '@/lib/errors'
 import { idSchema, paginate, pageMeta } from '@/lib/validation/common'
 import { assertSchoolAdministrator, assertStaffScope } from '@/src/modules/shared/authorization'
 import { schoolTransaction, type SchoolTransaction } from '@/src/modules/shared/transaction'
-import { commentQuerySchema, commentSchema, createParentSchema, parentLinkSchema, parentListSchema, teacherFamiliesSchema, updateParentSchema } from './validation'
+import { commentQuerySchema, commentSchema, parentListSchema, teacherFamiliesSchema, updateParentSchema } from './validation'
 
 const childSelect = { id: true, fullName: true, regNumber: true, classLevel: true } satisfies Prisma.StudentSelect
 const parentSelect = {
@@ -51,30 +52,6 @@ export async function listParents(ctx: ScopedStaffContext, raw: z.infer<typeof p
   return { parents, meta: pageMeta(total, input), schoolCode: school?.slug ?? '' }
 }
 
-export async function parentStudentChoices(ctx: ScopedStaffContext, raw: z.infer<typeof parentListSchema>) {
-  assertSchoolAdministrator(ctx)
-  const input = parentListSchema.parse(raw)
-  const where: Prisma.StudentWhereInput = input.search ? { OR: [{ fullName: { contains: input.search, mode: 'insensitive' } }, { regNumber: { contains: input.search.toUpperCase() } }] } : {}
-  const [students, total] = await Promise.all([
-    ctx.db.student.findMany({ where, select: childSelect, ...paginate(input), orderBy: [{ fullName: 'asc' }, { id: 'asc' }] }),
-    ctx.db.student.count({ where }),
-  ])
-  return { students, meta: pageMeta(total, input) }
-}
-
-export async function createParent(ctx: ScopedStaffContext, raw: z.infer<typeof createParentSchema>) {
-  assertSchoolAdministrator(ctx)
-  const input = createParentSchema.parse(raw)
-  const pinHash = await hashPassword(input.pin)
-  return schoolTransaction(ctx.db, async tx => {
-    if (!await tx.student.findFirst({ where: { id: input.studentId }, select: { id: true } })) throw notFound('Student not found.')
-    if (await tx.parent.findFirst({ where: { phone: input.phone }, select: { id: true } })) throw conflict('A parent account already uses this phone number. Link the child to that account instead.')
-    const parent = await tx.parent.create({ data: { schoolId: ctx.schoolId, fullName: input.fullName, phone: input.phone, pinHash }, select: { id: true } })
-    await tx.parentStudent.create({ data: { schoolId: ctx.schoolId, parentId: parent.id, studentId: input.studentId } })
-    return tx.parent.findFirstOrThrow({ where: { id: parent.id }, select: parentSelect })
-  })
-}
-
 export async function updateParent(ctx: ScopedStaffContext, raw: z.infer<typeof updateParentSchema>) {
   assertSchoolAdministrator(ctx)
   const { parentId, pin, ...data } = updateParentSchema.parse(raw)
@@ -83,23 +60,11 @@ export async function updateParent(ctx: ScopedStaffContext, raw: z.infer<typeof 
     const parent = await tx.parent.findFirst({ where: { id: parentId }, select: { id: true, phone: true } })
     if (!parent) throw notFound('Parent not found.')
     const revoke = Boolean(pinHash || data.isActive !== undefined || data.phone && data.phone !== parent.phone)
-    return tx.parent.update({ where: { id: parent.id }, data: { ...data, pinHash, ...(revoke ? { authVersion: { increment: 1 } } : {}) }, select: parentSelect })
-  })
-}
-
-export async function setParentLink(ctx: ScopedStaffContext, raw: z.infer<typeof parentLinkSchema>) {
-  assertSchoolAdministrator(ctx)
-  const input = parentLinkSchema.parse(raw)
-  return schoolTransaction(ctx.db, async tx => {
-    const [parent, student] = await Promise.all([
-      tx.parent.findFirst({ where: { id: input.parentId }, select: { id: true } }),
-      tx.student.findFirst({ where: { id: input.studentId }, select: { id: true } }),
-    ])
-    if (!parent || !student) throw notFound('Parent or student not found.')
-    return tx.parentStudent.upsert({
-      where: { schoolId_parentId_studentId: { schoolId: ctx.schoolId, parentId: parent.id, studentId: student.id } },
-      create: { schoolId: ctx.schoolId, ...input }, update: { isActive: input.isActive }, select: { id: true, isActive: true },
-    })
+    const updated = await tx.parent.update({ where: { id: parent.id }, data: { ...data, pinHash, ...(revoke ? { authVersion: { increment: 1 } } : {}) }, select: parentSelect })
+    if (data.phone && data.phone !== parent.phone) {
+      await tx.studentProfile.updateMany({ where: { guardianPhone: parent.phone, student: { parents: { some: { parentId: parent.id, fromGuardianProfile: true, isActive: true } } } }, data: { guardianPhone: data.phone } })
+    }
+    return updated
   })
 }
 
@@ -121,9 +86,11 @@ export async function assertParentChild(ctx: ScopedParentContext, studentId: str
 
 export async function childReports(ctx: ScopedParentContext, studentId: string) {
   await assertParentChild(ctx, studentId)
-  return ctx.db.reportCard.findMany({ where: { status: 'PUBLISHED', enrollment: { studentId } }, select: {
+  const reports = await ctx.db.reportCard.findMany({ where: { status: 'PUBLISHED', enrollment: { studentId } }, select: {
     id: true, total: true, average: true, position: true, teacherRemark: true, principalRemark: true, snapshot: true, publishedAt: true,
+    enrollment: { select: { student: { select: { fullName: true } } } },
   }, orderBy: [{ term: { startDate: 'desc' } }, { id: 'asc' }] })
+  return reports.map(({ enrollment, ...report }) => ({ ...report, snapshot: { ...report.snapshot as unknown as ReportSnapshot, student: enrollment.student.fullName } }))
 }
 
 function formTeacherScope(ctx: ScopedStaffContext, classArmId?: string): Prisma.EnrollmentWhereInput {

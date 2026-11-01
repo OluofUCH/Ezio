@@ -9,6 +9,7 @@ test('parents see only linked published results and exchange comments with the c
   const { unscopedDb: root } = await import('../../lib/db')
   const { tenantClient } = await import('../../lib/tenant')
   const parents = await import('../../src/modules/parents/service')
+  const { updateManagedStudent } = await import('../../src/modules/students/management')
   const { parentWorkspaceGet } = await import('../../src/modules/parents/handlers')
   const { signParentToken, signStaffToken, signStudentToken } = await import('../../lib/auth/jwt')
   const { requireParent } = await import('../../lib/auth/parent')
@@ -35,8 +36,10 @@ test('parents see only linked published results and exchange comments with the c
     }
     const one = await child('Child One', arm.id), two = await child('Child Two', arm.id), sibling = await child('Sibling', otherArm.id)
     const foreignChild = await root.student.create({ data: { schoolId: foreign.id, fullName: 'Foreign Child', regNumber: 'FOREIGN', pin: '001234', classLevel: 'NURSERY1' } })
-    const parent = await parents.createParent(adminCtx, { fullName: 'Parent One', phone: '08012345678', pin: '001234', studentId: one.student.id })
-    const second = await parents.createParent(adminCtx, { fullName: 'Parent Two', phone: '08012345679', pin: '002345', studentId: two.student.id })
+    await updateManagedStudent(adminCtx, one.student.id, { guardianName: 'Parent One', guardianPhone: '08012345678' })
+    await updateManagedStudent(adminCtx, two.student.id, { guardianName: 'Parent Two', guardianPhone: '08012345679' })
+    const parent = await db.parent.findFirstOrThrow({ where: { phone: '+2348012345678' }, include: { children: true } })
+    const second = await db.parent.findFirstOrThrow({ where: { phone: '+2348012345679' }, include: { children: true } })
     const parentCtx = { schoolId: school.id, db, session: { typ: 'parent' as const, parentId: parent.id, schoolId: school.id, authVersion: 1 } }
     const link = parent.children[0]!.id, secondLink = second.children[0]!.id
     const token = await signParentToken({ sub: parent.id, schoolId: school.id, authVersion: 1 })
@@ -45,7 +48,7 @@ test('parents see only linked published results and exchange comments with the c
     const otherReport = await db.reportCard.create({ data: { schoolId: school.id, enrollmentId: two.enrollment.id, classArmId: arm.id, termId: term.id, total: 90, average: 90, position: 1, subjectCount: 1, status: 'PUBLISHED', snapshot: { ...snapshot, student: two.student.fullName } } })
 
     await t.test('phone/PIN login creates a separate cookie and hides stored PIN hashes', async () => {
-      const response = await login(new NextRequest('http://sms.test/api/auth/parent/login', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '127.10.0.1' }, body: JSON.stringify({ schoolSlug: school.slug, phone: '+234 801 234 5678', pin: '001234' }) }), { params: Promise.resolve({}) })
+      const response = await login(new NextRequest('http://sms.test/api/auth/parent/login', { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '127.10.0.1' }, body: JSON.stringify({ schoolSlug: school.slug, phone: '+234 801 234 5678', pin: '1234' }) }), { params: Promise.resolve({}) })
       assert.equal(response.status, 200)
       assert(response.cookies.get('sms_parent')?.value)
       assert(!JSON.stringify(await response.json()).includes('pinHash'))
@@ -63,12 +66,16 @@ test('parents see only linked published results and exchange comments with the c
       await assert.rejects(parentWorkspaceGet(request(`api/sms/parent/workspace/report-pdf?id=${report.id}`, token), 'report-pdf'), { code: 'NOT_FOUND' })
       await db.reportCard.update({ where: { id: report.id }, data: { status: 'PUBLISHED', publishedAt: new Date() } })
       assert.equal((await parents.childReports(parentCtx, one.student.id)).length, 1)
+      await db.reportCard.update({ where: { id: report.id }, data: { snapshot: { ...snapshot, student: one.student.id } } })
+      assert.equal((await parents.childReports(parentCtx, one.student.id))[0]!.snapshot.student, one.student.fullName)
       for (const student of [two.student, foreignChild]) await assert.rejects(parents.childReports(parentCtx, student.id), { code: 'NOT_FOUND' })
       await assert.rejects(parentWorkspaceGet(request(`api/sms/parent/workspace/report-pdf?id=${otherReport.id}`, token), 'report-pdf'), { code: 'NOT_FOUND' })
       const pdf = await parentWorkspaceGet(request(`api/sms/parent/workspace/report-pdf?id=${report.id}`, token), 'report-pdf')
       assert.equal(pdf.headers.get('content-type'), 'application/pdf')
+      assert.match(pdf.headers.get('content-disposition') ?? '', /Child One/)
+      assert(!(pdf.headers.get('content-disposition') ?? '').includes(report.id))
       assert.equal(Buffer.from(await pdf.arrayBuffer()).subarray(0, 4).toString(), '%PDF')
-      for (const area of ['fees', 'attendance', 'dashboard', 'announcements']) await assert.rejects(parentWorkspaceGet(request(`api/sms/parent/workspace/${area}`, token), area), { code: 'NOT_FOUND' })
+      for (const area of ['fees', 'attendance', 'dashboard']) await assert.rejects(parentWorkspaceGet(request(`api/sms/parent/workspace/${area}`, token), area), { code: 'NOT_FOUND' })
     })
 
     await t.test('parents and form teachers can start conversations, with no access to other families', async () => {
@@ -81,7 +88,7 @@ test('parents see only linked published results and exchange comments with the c
       await assert.rejects(parents.postComment(adminCtx, { parentStudentId: link, body: 'Not a form teacher' }), { code: 'FORBIDDEN' })
       assert.equal((await parents.teacherFamilies(teacherCtx, { page: 1, pageSize: 50 })).families.length, 2)
       await parents.postComment(teacherCtx, { parentStudentId: secondLink, body: 'A teacher can start a conversation too.' })
-      await parents.setParentLink(adminCtx, { parentId: parent.id, studentId: sibling.student.id, isActive: true })
+      await updateManagedStudent(adminCtx, sibling.student.id, { guardianName: 'Parent One', guardianPhone: '08012345678' })
       assert.equal((await parents.parentChildren(parentCtx)).length, 2)
     })
 
@@ -89,18 +96,18 @@ test('parents see only linked published results and exchange comments with the c
       await db.classArm.update({ where: { id: arm.id }, data: { formTeacherId: otherTeacher.id } })
       await assert.rejects(parents.postComment(teacherCtx, { parentStudentId: link, body: 'Former teacher' }), { code: 'NOT_FOUND' })
       await parents.postComment(otherCtx, { parentStudentId: link, body: 'I am the new form teacher.' })
-      await parents.setParentLink(adminCtx, { parentId: parent.id, studentId: one.student.id, isActive: false })
+      await updateManagedStudent(adminCtx, one.student.id, { guardianPhone: null })
       await assert.rejects(parents.childReports(parentCtx, one.student.id), { code: 'NOT_FOUND' })
       await assert.rejects(parents.postComment(parentCtx, { parentStudentId: link, body: 'Unlinked' }), { code: 'NOT_FOUND' })
-      await parents.setParentLink(adminCtx, { parentId: parent.id, studentId: one.student.id, isActive: true })
+      await updateManagedStudent(adminCtx, one.student.id, { guardianPhone: '08012345678' })
       assert.equal((await parents.listComments(parentCtx, { parentStudentId: link, page: 1, pageSize: 50 })).comments.length, 3)
       await db.classArm.update({ where: { id: arm.id }, data: { formTeacherId: null } })
       await assert.rejects(parents.postComment(parentCtx, { parentStudentId: link, body: 'No assigned teacher' }), { code: 'CONFLICT' })
     })
 
     await t.test('parent management enforces tenant boundaries and PIN reset revokes prior sessions', async () => {
-      await assert.rejects(parents.createParent(teacherCtx, { fullName: 'Bad Parent', phone: '08012345670', pin: '123456', studentId: one.student.id }), { code: 'FORBIDDEN' })
-      await assert.rejects(parents.setParentLink(adminCtx, { parentId: parent.id, studentId: foreignChild.id, isActive: true }), { code: 'NOT_FOUND' })
+      await assert.rejects(updateManagedStudent(teacherCtx, one.student.id, { guardianName: 'Bad Parent', guardianPhone: '08012345670' }), { code: 'FORBIDDEN' })
+      await assert.rejects(updateManagedStudent(adminCtx, foreignChild.id, { guardianName: 'Parent One', guardianPhone: '08012345678' }), { code: 'NOT_FOUND' })
       await assert.rejects(root.parentStudent.create({ data: { schoolId: school.id, parentId: parent.id, studentId: foreignChild.id } }), { code: 'P2003' })
       await parents.updateParent(adminCtx, { parentId: parent.id, pin: '009999' })
       await assert.rejects(requireParent(request('api/sms/parent/workspace/children', token)), { code: 'UNAUTHENTICATED' })
@@ -112,6 +119,7 @@ test('parents see only linked published results and exchange comments with the c
     for (const schoolId of schoolIds) {
       const where = { schoolId }
       await root.parentComment.deleteMany({ where }); await root.parentStudent.deleteMany({ where }); await root.parent.deleteMany({ where })
+      await root.studentProfile.deleteMany({ where })
       await root.reportCard.deleteMany({ where }); await root.enrollment.deleteMany({ where }); await root.term.deleteMany({ where }); await root.classArm.deleteMany({ where }); await root.academicSession.deleteMany({ where })
       await root.student.deleteMany({ where }); await root.user.deleteMany({ where }); await root.auditLog.deleteMany({ where }); await root.school.deleteMany({ where: { id: schoolId } })
     }

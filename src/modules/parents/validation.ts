@@ -13,10 +13,8 @@ export const parentPhoneSchema = z.string().trim().min(1, 'Enter a phone number.
 
 export const parentLoginSchema = z.object({ schoolSlug: slugSchema, phone: parentPhoneSchema, pin: pinSchema }).strict()
 export const parentListSchema = paginationSchema.extend({ search: z.string().trim().max(100).optional() }).strict()
-export const createParentSchema = z.object({ fullName: fullNameSchema, phone: parentPhoneSchema, pin: pinSchema, studentId: idSchema }).strict()
 export const updateParentSchema = z.object({ parentId: idSchema, fullName: fullNameSchema.optional(), phone: parentPhoneSchema.optional(), pin: pinSchema.optional(), isActive: z.boolean().optional() })
   .strict().refine(value => Object.keys(value).length > 1, { message: 'Choose a detail to update.' })
-export const parentLinkSchema = z.object({ parentId: idSchema, studentId: idSchema, isActive: z.boolean() }).strict()
 export const commentQuerySchema = paginationSchema.extend({ parentStudentId: idSchema }).strict()
 export const commentSchema = z.object({ parentStudentId: idSchema, body: z.string().trim().min(1, 'Write a comment.').max(2000, 'Comments can be up to 2,000 characters.') }).strict()
 export const parentChildrenQuerySchema = z.object({ studentId: idSchema }).strict()

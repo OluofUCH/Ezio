@@ -13,17 +13,18 @@ import * as attendance from '@/src/modules/attendance/service'
 import * as results from '@/src/modules/results/service'
 import { assessmentSchema } from '@/src/modules/results/rules'
 import { reportPdf } from '@/src/modules/results/pdf'
+import { reportDownloadHeaders } from '@/src/modules/results/download'
 import * as bridge from '@/src/modules/cbt-results/service'
 import * as announcements from '@/src/modules/announcements/service'
 import { staffLookups, staffDashboard, studentDashboard } from '@/src/modules/dashboards/service'
 import * as parents from '@/src/modules/parents/service'
-import { createParentSchema, updateParentSchema, parentLinkSchema, parentListSchema, teacherFamiliesSchema, commentQuerySchema, commentSchema } from '@/src/modules/parents/validation'
+import { updateParentSchema, parentListSchema, teacherFamiliesSchema, commentQuerySchema, commentSchema } from '@/src/modules/parents/validation'
 import { feeRegister, setFeeStatus } from '@/src/modules/fees/service'
 import { feeQuerySchema, feeStatusSchema } from '@/src/modules/fees/validation'
 
 const armTerm = z.object({ classArmId: idSchema, termId: idSchema }).strict()
 const bodySchema = z.object({ op: z.string().optional() }).passthrough()
-const pdfResponse = (data: Uint8Array, id: string) => new NextResponse(new Uint8Array(data), { headers: { 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="report-${id.replace(/[^a-z0-9_-]/gi, '')}.pdf"`, 'cache-control': 'private, no-store' } })
+const pdfResponse = (data: Uint8Array, snapshot: unknown, studentName: string) => new NextResponse(new Uint8Array(data), { headers: reportDownloadHeaders(snapshot, studentName) })
 
 export async function staffWorkspaceGet(req: NextRequest, area: string) {
   const ctx = await requireSmsStaff(req)
@@ -32,7 +33,6 @@ export async function staffWorkspaceGet(req: NextRequest, area: string) {
     case 'lookups': return ok({ schoolId: ctx.schoolId, ...await staffLookups(ctx) })
     case 'dashboard': return ok({ schoolId: ctx.schoolId, ...await staffDashboard(ctx) })
     case 'parents': return ok(await parents.listParents(ctx, readQuery(req, parentListSchema)))
-    case 'parent-students': return ok(await parents.parentStudentChoices(ctx, readQuery(req, parentListSchema)))
     case 'parent-families': return ok(await parents.teacherFamilies(ctx, readQuery(req, teacherFamiliesSchema)))
     case 'parent-comments': return ok(await parents.listComments(ctx, readQuery(req, commentQuerySchema)))
     case 'fees': return ok(await feeRegister(ctx, readQuery(req, feeQuerySchema)))
@@ -64,11 +64,11 @@ export async function staffWorkspaceGet(req: NextRequest, area: string) {
       return new NextResponse(photo.data, { headers: { 'content-type': photo.mimeType, 'cache-control': 'private, no-store' } })
     }
     case 'report-pdf': {
-      const report = await ctx.db.reportCard.findFirst({ where: { id: param('id') } })
+      const report = await ctx.db.reportCard.findFirst({ where: { id: param('id') }, include: { enrollment: { select: { student: { select: { fullName: true } } } } } })
       if (!report) throw notFound('Report not found.')
       const term = await ownTerm(ctx.db, report.termId)
       await assertArmAccess(ctx, report.classArmId, term.academicSessionId)
-      return pdfResponse(await reportPdf(ctx.db, report), report.id)
+      return pdfResponse(await reportPdf(ctx.db, report), report.snapshot, report.enrollment.student.fullName)
     }
     default: throw notFound('SMS endpoint not found.')
   }
@@ -87,8 +87,7 @@ export async function staffWorkspacePost(req: NextRequest, area: string) {
   switch (area) {
     case 'parents': {
       if (op === 'update') return ok({ parent: await parents.updateParent(ctx, updateParentSchema.parse(input)) })
-      if (op === 'link') return ok(await parents.setParentLink(ctx, parentLinkSchema.parse(input)))
-      return created({ parent: await parents.createParent(ctx, createParentSchema.parse(input)) })
+      throw forbidden('Parent accounts and child links are created automatically from student guardian profiles.')
     }
     case 'parent-comments': return created(await parents.postComment(ctx, commentSchema.parse(input)))
     case 'fees': return ok(await setFeeStatus(ctx, feeStatusSchema.parse(input)))
@@ -113,11 +112,11 @@ export async function studentWorkspaceGet(req: NextRequest, area: string) {
     case 'dashboard': return ok(await studentDashboard(ctx.db, ctx.session.studentId))
     case 'reports': return ok({ reports: await results.ownReports(ctx.db, ctx.session.studentId) })
     case 'attendance': return ok(await attendance.studentAttendance(ctx.db, ctx.session.studentId))
-    case 'announcements': throw forbidden('Announcements are available only to staff.')
+    case 'announcements': throw forbidden('Notices are available to staff and parent accounts.')
     case 'report-pdf': {
-      const report = await ctx.db.reportCard.findFirst({ where: { id: idSchema.parse(req.nextUrl.searchParams.get('id')), status: 'PUBLISHED', enrollment: { studentId: ctx.session.studentId } } })
+      const report = await ctx.db.reportCard.findFirst({ where: { id: idSchema.parse(req.nextUrl.searchParams.get('id')), status: 'PUBLISHED', enrollment: { studentId: ctx.session.studentId } }, include: { enrollment: { select: { student: { select: { fullName: true } } } } } })
       if (!report) throw notFound('Published report not found.')
-      return pdfResponse(await reportPdf(ctx.db, report), report.id)
+      return pdfResponse(await reportPdf(ctx.db, report), report.snapshot, report.enrollment.student.fullName)
     }
     default: throw notFound('Student endpoint not found.')
   }

@@ -4,6 +4,7 @@ import { assessmentSchema, gradeFor, money, rankedTotals, scaleCbt } from '../sr
 import { attendanceTotals } from '../src/modules/attendance/service'
 import { announcementSchema } from '../src/modules/announcements/service'
 import { parseRosterFile } from '../lib/import/students-csv'
+import { STANDARD_GRADE_BANDS } from '../src/modules/results/presets'
 
 const components = [
   { name: 'CA1', maxScore: 20, orderIndex: 0 },
@@ -30,6 +31,14 @@ test('totals use two-decimal half-up rounding and grades include boundaries', ()
   assert.deepEqual(gradeFor(40, bands), { grade: 'C', remark: 'Credit' })
   assert.deepEqual(gradeFor(60, bands), { grade: 'A', remark: 'Excellent' })
   assert.deepEqual(gradeFor(100, bands), { grade: 'A', remark: 'Excellent' })
+})
+
+test('the A–F preset covers all scores and applies the selected grade boundaries', () => {
+  const preset = [...STANDARD_GRADE_BANDS]
+  assert(assessmentSchema.safeParse({ components, bands: preset }).success)
+  for (const [score, grade] of [[0, 'F'], [39.99, 'F'], [40, 'E'], [44.99, 'E'], [45, 'D'], [49.99, 'D'], [50, 'C'], [59.99, 'C'], [60, 'B'], [69.99, 'B'], [70, 'A'], [100, 'A']] as const) {
+    assert.equal(gradeFor(score, preset).grade, grade)
+  }
 })
 
 test('competition ranking gives tied totals the same position and skips the next place', () => {
@@ -61,6 +70,11 @@ test('announcement targets are structurally tied to their audience', () => {
   assert.equal(announcementSchema.safeParse({ title: 'Arm', body: 'Hello', audience: 'CLASS_ARM', classArmId: 'arm' }).success, true)
   assert.equal(announcementSchema.safeParse({ title: 'Leak', body: 'Hello', audience: 'ALL_STAFF', classArmId: 'arm' }).success, false)
   assert.equal(announcementSchema.safeParse({ title: 'Missing', body: 'Hello', audience: 'ROLE' }).success, false)
+  assert.equal(announcementSchema.safeParse({ title: 'Parents', body: 'Hello', audience: 'ALL_PARENTS' }).success, true)
+  assert.equal(announcementSchema.safeParse({ title: 'Class parents', body: 'Hello', audience: 'PARENT_CLASS_ARM', classArmId: 'arm' }).success, true)
+  assert.equal(announcementSchema.safeParse({ title: 'Missing', body: 'Hello', audience: 'PARENT_CLASS_ARM' }).success, false)
+  assert.equal(announcementSchema.safeParse({ title: 'Wrong target', body: 'Hello', audience: 'ALL_PARENTS', targetRole: 'TEACHER' }).success, false)
+  assert.equal(announcementSchema.safeParse({ title: 'Wrong target', body: 'Hello', audience: 'ALL_PARENTS', classArmId: 'arm' }).success, false)
 })
 
 test('student roster parser accepts an optional arm and preserves leading-zero PINs', () => {

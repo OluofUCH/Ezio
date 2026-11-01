@@ -25,7 +25,7 @@ function TeacherCommentsPanel() {
       {state.data && <>
         <div className="card divide-y">{state.data.families.map(family => <div key={family.parentStudentId} className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div><strong>{family.student.fullName}</strong><p className="mt-1 text-sm text-on-surface-variant">{family.student.regNumber} · Parent: {family.parent.fullName}</p></div>
-          <Button variant={selected === family.parentStudentId ? 'default' : 'outline'} onClick={() => setSelected(family.parentStudentId)} aria-label={`Comments with ${family.parent.fullName} about ${family.student.fullName}`}>Open comments</Button>
+          <Button variant={selected === family.parentStudentId ? 'default' : 'outline'} onClick={() => setSelected(family.parentStudentId)} aria-label={`Open comments with ${family.parent.fullName} about ${family.student.fullName}`}>Open comments</Button>
         </div>)}{!state.data.families.length && <p className="p-6">No linked parents found for your form classes. The school administrator can create parent accounts and link children.</p>}</div>
         <ParentPagination meta={state.data.meta} onPage={value => { setPage(value); setSelected('') }} />
       </>}
