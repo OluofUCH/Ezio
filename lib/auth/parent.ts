@@ -14,7 +14,7 @@ export async function resolveParentSession(payload: ParentTokenPayload) {
   const db = tenantClient(payload.schoolId)
   const parent = await db.parent.findFirst({ where: { id: payload.sub }, select: {
     id: true, fullName: true, phone: true, isActive: true, authVersion: true,
-    school: { select: { id: true, name: true, slug: true, isActive: true } },
+    school: { select: { id: true, name: true, slug: true, logoUrl: true, isActive: true } },
   } })
   if (!parent) throw unauthenticated('Parent authentication required.')
   if (!parent.isActive || !parent.school.isActive) throw forbidden('Parent access is unavailable. Contact your school administrator.')

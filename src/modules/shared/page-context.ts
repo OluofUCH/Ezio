@@ -23,7 +23,7 @@ export const getSmsStaffPageContext = cache(async () => {
   const staff = await getStaffPageContext()
   if (staff.user.role === 'SUPER_ADMIN') redirect(portalHome(staff.user.role))
   const context = await resolveSmsStaff(staff.session)
-  return { user: staff.user, school: context.school, isFormTeacher: staff.isFormTeacher }
+  return { user: staff.user, school: { ...context.school, logoUrl: staff.school?.logoUrl ?? null }, isFormTeacher: staff.isFormTeacher }
 })
 
 export const getSmsPageContext = cache(async () => {
@@ -41,7 +41,7 @@ export const getSmsAdmissionsPageContext = cache(async () => {
 export const getSmsStudentPageContext = cache(async () => {
   const context = await getStudentContext()
   if (!context) redirect('/login?as=student')
-  return { user: { id: context.student.id, fullName: context.student.fullName, role: 'STUDENT' as const, regNumber: context.student.regNumber }, school: { id: context.school.id, name: context.school.name, isActive: true } }
+  return { user: { id: context.student.id, fullName: context.student.fullName, role: 'STUDENT' as const, regNumber: context.student.regNumber }, school: { id: context.school.id, name: context.school.name, logoUrl: context.school.logoUrl, isActive: true } }
 })
 
 export const getSmsParentPageContext = cache(async () => {

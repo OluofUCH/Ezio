@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/ui/Icon";
 import { Spinner } from "@/components/ui/Spinner";
+import { SchoolLogo } from "@/components/ui/SchoolLogo";
 import { api, errorMessage } from "@/lib/client/api";
 import { isNavLinkActive, type NavGroup, type NavItem, type NavLink } from "@/src/modules/shared/navigation";
 
@@ -12,6 +13,7 @@ type AppShellProps = {
   nav: NavItem[];
   /** Brand strapline under the product name, e.g. "Admin Portal". */
   portalLabel: string;
+  school?: { name: string; logoUrl: string | null } | null;
   /** Displayed in the account menu. */
   userName: string;
   userMeta: string;
@@ -32,6 +34,7 @@ type AppShellProps = {
 export function AppShell({
   nav,
   portalLabel,
+  school,
   userName,
   userMeta,
   logoutPath,
@@ -124,9 +127,7 @@ export function AppShell({
   const sidebarBody = (
     <>
       <div className="mb-6 flex items-center gap-3 border-b border-border-subtle px-2 pb-4 pr-12 pt-2 md:pr-2">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-container">
-          <Icon name="school" filled className="text-on-surface" />
-        </div>
+        <SchoolLogo logoUrl={school?.logoUrl} schoolName={school?.name} />
         <div className="min-w-0">
           <p className="truncate font-headline-md text-headline-md font-bold leading-tight text-on-surface">
             Ezio
@@ -211,7 +212,7 @@ export function AppShell({
 
       <div inert={drawerOpen || undefined} className="flex min-w-0 w-full flex-1 flex-col md:ml-sidebar-width">
         <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border-subtle bg-surface px-margin-mobile shadow-sm md:px-margin-desktop">
-          <div className="flex items-center gap-4">
+          <div className="flex min-w-0 items-center gap-3">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
@@ -222,6 +223,7 @@ export function AppShell({
             >
               <Icon name="menu" />
             </button>
+            {school?.logoUrl ? <SchoolLogo logoUrl={school.logoUrl} schoolName={school.name} size={36} /> : null}
             <span className="font-headline-md text-headline-md font-extrabold text-on-surface">
               Ezio
             </span>

@@ -16,7 +16,7 @@ export default async function Page() {
       fullName={user.fullName}
       email={user.email}
       role={user.role}
-      schoolName={school?.name ?? null}
+      school={school}
     />
   )
 }

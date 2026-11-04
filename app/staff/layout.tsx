@@ -22,6 +22,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       <AppShell
         nav={portalNavigation(user.role, { canAdmitStudents: isFormTeacher })}
         portalLabel={user.role === 'SUPER_ADMIN' ? 'Platform administration' : school?.name ?? 'School management'}
+        school={school}
         userName={user.fullName}
         userMeta={`${ROLE_LABELS[user.role]} · ${user.email}`}
         logoutPath="/api/auth/staff/logout"

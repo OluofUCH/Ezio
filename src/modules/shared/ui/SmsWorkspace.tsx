@@ -6,7 +6,7 @@ import { AppShell } from '@/components/shell/AppShell'
 import { ApiClientError, errorMessage } from '@/lib/client/api'
 import { portalNavigation } from '@/src/modules/shared/navigation'
 
-export type SmsSchool = { id: string; name: string; isActive: boolean }
+export type SmsSchool = { id: string; name: string; logoUrl: string | null; isActive: boolean }
 export type SmsUser = { id: string; fullName: string; email?: string; regNumber?: string; phone?: string; role: 'SUPER_ADMIN' | 'SCHOOL_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT' }
 
 export function isContextError(error: unknown): boolean {
@@ -61,6 +61,7 @@ function WorkspaceBody({ user, initialSchool: school, isFormTeacher = false, chi
       <AppShell
         nav={portalNavigation(user.role, { canAdmitStudents: isFormTeacher })}
         portalLabel={school?.name ?? 'School management'}
+        school={school}
         userName={user.fullName}
         userMeta={`${user.role.replaceAll('_', ' ')} · ${user.email ?? user.regNumber ?? user.phone ?? ''}`}
         logoutPath={user.role === 'PARENT' ? '/api/auth/parent/logout' : user.role === 'STUDENT' ? '/api/auth/student/logout' : '/api/auth/staff/logout'}

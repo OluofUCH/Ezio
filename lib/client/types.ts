@@ -28,6 +28,9 @@ export type WindowState = 'OPEN' | 'NOT_YET_OPEN' | 'CLOSED'
 
 export type SchoolSummary = { id: string; name: string; slug: string; logoUrl?: string | null }
 
+/** POST /api/school/logo and DELETE /api/school/logo */
+export type SchoolLogoResult = { school: { id: string; name: string; logoUrl: string | null } }
+
 export type StaffMe = {
   user: { id: string; email: string; fullName: string; role: UserRole; createdAt: string }
   school: SchoolSummary | null

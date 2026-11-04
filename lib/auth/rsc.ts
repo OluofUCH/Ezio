@@ -38,7 +38,7 @@ export type RscStaffContext = {
   session: StaffSession
   db: TenantDb | null
   user: { id: string; email: string; fullName: string; role: StaffSession['role'] }
-  school: { id: string; name: string; slug: string } | null
+  school: { id: string; name: string; slug: string; logoUrl: string | null } | null
 }
 
 /**
@@ -71,7 +71,7 @@ export async function getStaffContext(): Promise<RscStaffContext | null> {
       role: true,
       isActive: true,
       schoolId: true,
-      school: { select: { id: true, name: true, slug: true, isActive: true } },
+      school: { select: { id: true, name: true, slug: true, logoUrl: true, isActive: true } },
     },
   })
 
@@ -92,7 +92,7 @@ export async function getStaffContext(): Promise<RscStaffContext | null> {
     session,
     db: user.role !== 'SUPER_ADMIN' && user.schoolId ? tenantClient(user.schoolId) : null,
     user: { id: user.id, email: user.email, fullName: user.fullName, role: user.role },
-    school: user.role !== 'SUPER_ADMIN' && user.school ? { id: user.school.id, name: user.school.name, slug: user.school.slug } : null,
+    school: user.role !== 'SUPER_ADMIN' && user.school ? { id: user.school.id, name: user.school.name, slug: user.school.slug, logoUrl: user.school.logoUrl } : null,
   }
 }
 
@@ -104,7 +104,7 @@ export type RscStudentContext = {
   session: StudentSession
   db: TenantDb
   student: { id: string; regNumber: string; fullName: string; classLevel: StudentSession['classLevel'] }
-  school: { id: string; name: string; slug: string }
+  school: { id: string; name: string; slug: string; logoUrl: string | null }
 }
 
 export async function getStudentContext(): Promise<RscStudentContext | null> {
@@ -128,7 +128,7 @@ export async function getStudentContext(): Promise<RscStudentContext | null> {
       regNumber: true,
       fullName: true,
       classLevel: true,
-      school: { select: { id: true, name: true, slug: true, isActive: true } },
+      school: { select: { id: true, name: true, slug: true, logoUrl: true, isActive: true } },
     },
   })
 
@@ -149,7 +149,7 @@ export async function getStudentContext(): Promise<RscStudentContext | null> {
       fullName: student.fullName,
       classLevel: student.classLevel,
     },
-    school: { id: student.school.id, name: student.school.name, slug: student.school.slug },
+    school: { id: student.school.id, name: student.school.name, slug: student.school.slug, logoUrl: student.school.logoUrl },
   }
 }
 

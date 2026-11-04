@@ -21,6 +21,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
     <AppShell
       nav={portalNavigation('STUDENT')}
       portalLabel={school.name}
+      school={school}
       userName={student.fullName}
       userMeta={`${student.regNumber} · ${classLevelLabel(student.classLevel)}`}
       logoutPath="/api/auth/student/logout"

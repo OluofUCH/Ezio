@@ -5,7 +5,8 @@ import { Alert, Badge } from '@/components/ui/Feedback'
 import { Icon } from '@/components/ui/Icon'
 import { Spinner } from '@/components/ui/Spinner'
 import { ApiClientError, api, errorMessage } from '@/lib/client/api'
-import type { ChangePasswordResult, UserRole } from '@/lib/client/types'
+import type { ChangePasswordResult, SchoolLogoResult, UserRole } from '@/lib/client/types'
+import { SchoolLogoSettings } from './SchoolLogoSettings'
 
 const ROLE_LABELS: Record<UserRole, string> = {
   SUPER_ADMIN: 'Platform admin',
@@ -20,12 +21,12 @@ export function AccountSettings({
   fullName,
   email,
   role,
-  schoolName,
+  school,
 }: {
   fullName: string
   email: string
   role: UserRole
-  schoolName: string | null
+  school: SchoolLogoResult['school'] | null
 }) {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -88,7 +89,7 @@ export function AccountSettings({
           My account
         </h1>
         <p className="mt-1 font-body-md text-body-md text-on-surface-variant">
-          Your details and sign-in password.
+          {role === 'SCHOOL_ADMIN' ? 'Your details, school logo and sign-in password.' : 'Your details and sign-in password.'}
         </p>
       </header>
 
@@ -100,7 +101,7 @@ export function AccountSettings({
           <Row label="Name" value={fullName} />
           <Row label="Email" value={email} />
           <Row label="Role" value={<Badge tone={role === 'TEACHER' ? 'neutral' : 'info'}>{ROLE_LABELS[role]}</Badge>} />
-          <Row label="School" value={schoolName ?? 'Platform account'} />
+          <Row label="School" value={school?.name ?? 'Platform account'} />
         </dl>
 
         <p className="mt-6 font-label-sm text-label-sm text-outline">
@@ -109,6 +110,8 @@ export function AccountSettings({
             : 'Your name, email and role are managed by a school administrator. Your email is your sign-in identifier.'}
         </p>
       </section>
+
+      {role === 'SCHOOL_ADMIN' && school ? <SchoolLogoSettings key={school.id} school={school} /> : null}
 
       {/* Password */}
       <section className="card p-6 md:p-8">
